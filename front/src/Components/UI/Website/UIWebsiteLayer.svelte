@@ -2,6 +2,7 @@
     import { onDestroy, onMount } from "svelte";
     import { UIWebsite } from "../../../Api/Events/Ui/UIWebsite";
     import { iframeListener } from "../../../Api/IframeListener";
+    import { biggestAvailableAreaStore } from "../../../Stores/BiggestAvailableAreaStore";
 
     export let uiWebsite: UIWebsite;
 
@@ -25,6 +26,7 @@
                   uiWebsite.margin.left ? uiWebsite.margin.left : "O"
               }`
             : "0";
+        uiWebsite.canOverlapPlayer ? iframe.classList.remove("screen-blocker") : iframe.classList.add("screen-blocker");
     }
 
     onMount(() => {
@@ -33,6 +35,8 @@
         if (uiWebsite.allowApi) {
             iframeListener.registerIframe(iframe);
         }
+
+        biggestAvailableAreaStore.recompute();
     });
 
     onDestroy(() => {
