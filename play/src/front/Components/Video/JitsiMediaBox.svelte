@@ -7,7 +7,7 @@
 
     import { isMediaBreakpointUp } from "../../Utils/BreakpointsUtils";
     import { LayoutMode } from "../../WebRtc/LayoutManager";
-    import microphoneOffImg from "../images/microphone-off.png";
+    import MicrophoneOffImg from "../images/microphone-off.png";
 
     import { EmbedScreen, highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
     import { Streamable } from "../../Stores/StreamableCollectionStore";
@@ -16,6 +16,7 @@
     import UserTag from "./UserTag.svelte";
     import JitsiVideoElement from "./JitsiVideoElement.svelte";
     import JitsiAudioElement from "./JitsiAudioElement.svelte";
+    import ActionMediaBox from "./ActionMediaBox.svelte";
 
     export let clickable = true;
     export let peer: JitsiTrackStreamWrapper;
@@ -52,8 +53,12 @@
     id="container"
     class="jitsi-video"
     bind:this={videoContainer}
+    on:keydown
+    on:keypress
     on:click={() => (clickable ? highlightedEmbedScreen.toggleHighlight(embedScreen) : null)}
 >
+    <ActionMediaBox {embedScreen} trackStreamWraper={peer} />
+
     {#if $videoTrackStore}
         <div class="tw-rounded-sm tw-overflow-hidden tw-flex tw-w-full tw-flex-col tw-h-full">
             <JitsiVideoElement
@@ -75,7 +80,7 @@
             {:else}
                 <img
                     draggable="false"
-                    src={microphoneOffImg}
+                    src={MicrophoneOffImg}
                     class="tw-flex tw-p-1 tw-h-8 tw-w-8 voice-meter-cam-off tw-relative tw-mr-0 tw-ml-auto tw-translate-x-0 tw-transition-transform"
                     alt="Mute"
                     class:tw-brightness-0={textColor === "black" && !$videoTrackStore}

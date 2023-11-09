@@ -1,11 +1,11 @@
 import { get, Readable, writable, Writable } from "svelte/store";
 import type JitsiTrack from "lib-jitsi-meet/types/hand-crafted/modules/RTC/JitsiTrack";
+import { TackStreamWrapper } from "../Contract/TackStreamWrapper";
 import { JitsiTrackWrapper } from "./JitsiTrackWrapper";
-
 /**
  * An object that wraps a JitsiTrackWrapper and points only to "video/audio" or "desktop" track
  */
-export class JitsiTrackStreamWrapper {
+export class JitsiTrackStreamWrapper implements TackStreamWrapper {
     //public readonly uniqueId: string;
     private readonly _audioTrackStore: Writable<JitsiTrack | undefined> = writable<JitsiTrack | undefined>(undefined);
     private readonly _videoTrackStore: Writable<JitsiTrack | undefined> = writable<JitsiTrack | undefined>(undefined);
@@ -47,5 +47,29 @@ export class JitsiTrackStreamWrapper {
 
     public isEmpty(): boolean {
         return !this.getVideoTrack() && !this.getAudioTrack();
+    }
+
+    public isLocal(): boolean {
+        return this.jitsiTrackWrapper.isLocal;
+    }
+
+    public muteAudio(): void {
+        this.jitsiTrackWrapper.muteAudio();
+    }
+
+    public muteAudioEveryBody(): void {
+        console.info("Not implemented yet!");
+    }
+
+    public muteVideo(): void {
+        this.jitsiTrackWrapper.muteVideo();
+    }
+
+    public muteVideoEverybody(): void {
+        console.info("Not implemented yet!");
+    }
+
+    public ban(): void {
+        console.info("Not implemented yet!");
     }
 }
