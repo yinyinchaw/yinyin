@@ -171,15 +171,15 @@ export class FrontController extends BaseHttpController {
         });
 
         this.app.get("/*", (req: Request, res: Response) => {
-            if (req.path.startsWith("/src") || req.path.startsWith("/node_modules") || req.path.startsWith("/@fs/")) {
-                // TODO check how this is used and if it is still needed for MacOs (it is not used in the current version)
-                /*if (
+            //if (req.path.startsWith("/src") || req.path.startsWith("/node_modules") || req.path.startsWith("/@fs/")) {
+            // TODO check how this is used and if it is still needed for MacOs (it is not used in the current version)
+            if (
                 req.path.startsWith("/collections") ||
                 req.path.startsWith("/resources") ||
                 req.path.startsWith("/src") ||
                 req.path.startsWith("/node_modules") ||
                 req.path.startsWith("/@fs/")
-            ) {*/
+            ) {
                 res.status(303).redirect(`${VITE_URL}${decodeURI(req.path)}`);
                 return;
             }

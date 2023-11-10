@@ -23,6 +23,7 @@ import {
 import { megaphoneEnabledStore } from "../../Stores/MegaphoneStore";
 import { gameManager } from "../../Phaser/Game/GameManager";
 import { requestedScreenSharingState } from "../../Stores/ScreenSharingStore";
+import { notificationPlayingStore } from "../../Stores/NotificationStore";
 import { JitsiTrackWrapper } from "./JitsiTrackWrapper";
 import { JitsiLocalTracks } from "./JitsiLocalTracks";
 
@@ -56,7 +57,7 @@ export class JitsiConferenceWrapper {
 
     private firstLocalTrackInitialization = false;
 
-    constructor(private jitsiConference: JitsiConference) {
+    constructor(private jitsiConference: JitsiConference, public readonly jitsiRoomName: string) {
         this._streamStore = writable<Map<string, JitsiTrackWrapper>>(new Map<string, JitsiTrackWrapper>());
         this._broadcastDevicesStore = writable<DeviceType[]>([]);
     }
@@ -66,7 +67,7 @@ export class JitsiConferenceWrapper {
             const JitsiMeetJS = window.JitsiMeetJS;
             const room = connection.initJitsiConference(jitsiRoomName, {});
 
-            const jitsiConferenceWrapper = new JitsiConferenceWrapper(room);
+            const jitsiConferenceWrapper = new JitsiConferenceWrapper(room, jitsiRoomName);
 
             //let isJoined = false;
             //const localTracks: any[] = [];
@@ -268,6 +269,12 @@ export class JitsiConferenceWrapper {
                 () => debug(`${room.getPhoneNumber()} - ${room.getPhonePin()}`));*/
             jitsiConferenceWrapper.myParticipantId = room.myUserId();
             room.join("");
+
+            // Push notification
+            notificationPlayingStore.playNotification(
+                `You entered in a meetng room: ${jitsiRoomName}`,
+                "jitsi-logo.png"
+            );
         });
     }
 
@@ -500,7 +507,7 @@ export class JitsiConferenceWrapper {
             }
             let jitsiTrackWrapper = tracks.get(participantId);
             if (!jitsiTrackWrapper) {
-                jitsiTrackWrapper = new JitsiTrackWrapper(participantId, track);
+                jitsiTrackWrapper = new JitsiTrackWrapper(participantId, track, this.jitsiRoomName);
                 tracks.set(participantId, jitsiTrackWrapper);
             } else {
                 jitsiTrackWrapper.setJitsiTrack(track, allowOverride);
@@ -582,5 +589,9 @@ export class JitsiConferenceWrapper {
 
             return tracks;
         });
+    }
+
+    public kickParticipant(participantId: string) {
+        this.jitsiConference.kickParticipant(participantId, "Kicked by moderator");
     }
 }

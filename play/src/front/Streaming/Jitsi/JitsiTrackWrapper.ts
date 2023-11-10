@@ -15,7 +15,8 @@ export class JitsiTrackWrapper {
     private volumeStoreSubscribe: Unsubscriber | undefined;
     public readonly isLocal: boolean;
 
-    constructor(readonly participantId: string, jitsiTrack: JitsiTrack) {
+    constructor(readonly participantId: string, jitsiTrack: JitsiTrack, public readonly jitsiRoomName: string) {
+        console.log("JitsiTrackWrapper => constructor => jitsiRoomName", jitsiRoomName);
         this.setJitsiTrack(jitsiTrack);
         this.isLocal = jitsiTrack.isLocal();
         this._volumeStore = readable<number[] | undefined>(undefined, (set) => {
