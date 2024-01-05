@@ -79,6 +79,11 @@ export const FALLBACK_LOCALE: string | undefined = env.FALLBACK_LOCALE;
 // Logrocket id
 export const LOGROCKET_ID: string | undefined = env.LOGROCKET_ID;
 
+// Matrix
+export const MATRIX_DOMAIN: string = env.MATRIX_DOMAIN || "";
+export const MATRIX_PUBLIC_URI: string | undefined = env.MATRIX_PUBLIC_URI;
+export const MATRIX_API_URI: string = env.MATRIX_API_URI || "";
+
 // Sentry integration
 export const SENTRY_DSN: string | undefined = env.SENTRY_DSN_PUSHER;
 export const SENTRY_ENVIRONMENT: string | undefined = env.SENTRY_ENVIRONMENT;

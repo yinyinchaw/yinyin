@@ -2,29 +2,17 @@
     import type { Unsubscriber } from "svelte/store";
     import type { Subscription } from "rxjs";
     import { onDestroy, onMount } from "svelte";
-    import { Color } from "@workadventure/shared-utils";
-    import { derived, get } from "svelte/store";
+    import { derived } from "svelte/store";
     import { SpaceFilterMessage } from "@workadventure/messages";
-    import {
-        chatVisibilityStore,
-        iframeLoadedStore,
-        wokaDefinedStore,
-        writingStatusMessageStore,
-    } from "../../Stores/ChatStore";
+    import { SidebarIcon } from "svelte-feather-icons";
+    import { chatIsReadyStore, chatVisibilityStore, iframeLoadedStore, wokaDefinedStore } from "../../Stores/ChatStore";
     import { enableUserInputsStore } from "../../Stores/UserInputStore";
     import { iframeListener } from "../../Api/IframeListener";
-    import { currentPlayerWokaStore } from "../../Stores/CurrentPlayerWokaStore";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import { CHAT_URL } from "../../Enum/EnvironmentVariable";
     import { locale } from "../../../i18n/i18n-svelte";
-    import { AdminMessageEventTypes, adminMessagesService } from "../../Connection/AdminMessagesService";
-    import { menuIconVisiblilityStore } from "../../Stores/MenuStore";
-    import { availabilityStatusStore } from "../../Stores/MediaStore";
-    import { peerStore } from "../../Stores/PeerStore";
-    import { connectionManager } from "../../Connection/ConnectionManager";
     import { gameSceneIsLoadedStore } from "../../Stores/GameSceneStore";
     import { Locales } from "../../../i18n/i18n-types";
-    import { localUserStore } from "../../Connection/LocalUserStore";
     import { mapEditorModeStore } from "../../Stores/MapEditorStore";
 
     let chatIframe: HTMLIFrameElement;
@@ -42,7 +30,7 @@
     );
 
     // Phantom woka
-    let wokaSrc =
+    /*let wokaSrc =
         " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
     const playUri = window.location.protocol + "//" + window.location.hostname + window.location.pathname;
     let name = gameManager.getPlayerName() ?? "unknown";
@@ -55,54 +43,87 @@
             }
             return `[e-${codePoint.toString(16)}]`;
         }
-    );
+    );*/
 
     onMount(() => {
         iframeListener.registerChatIframe(chatIframe);
         chatIframe.addEventListener("load", () => {
-            iframeLoadedStore.set(false);
-            if (chatIframe && chatIframe.contentWindow && "postMessage" in chatIframe.contentWindow) {
-                iframeLoadedStore.set(true);
-                subscribeListeners.push(
-                    locale.subscribe((value: Locales) => {
+            subscribeListeners.push(
+                chatIsReadyStore.subscribe((value) => {
+                    if (value) {
+                        iframeListener.sendSettingsToChatIframe();
+                        iframeListener.sendUserDataToChatIframe();
                         chatIframe?.contentWindow?.postMessage(
                             {
                                 type: "setLocale",
                                 data: {
-                                    locale: value,
+                                    locale: $locale,
                                 },
                             },
                             "*"
                         );
-                    })
-                );
-                subscribeListeners.push(
-                    currentPlayerWokaStore.subscribe((value) => {
-                        if (value !== undefined) {
-                            wokaSrc = value;
-                            wokaDefinedStore.set(true);
-                        }
-                    })
-                );
-                subscribeListeners.push(
-                    canSendInitMessageStore.subscribe((value) => {
-                        if (value) {
-                            iframeListener.sendSettingsToChatIframe();
-                            chatIframe?.contentWindow?.postMessage(
-                                {
-                                    type: "userData",
-                                    data: {
-                                        ...localUserStore.getLocalUser(),
-                                        name,
-                                        playUri,
-                                        authToken: localUserStore.getAuthToken(),
-                                        color: Color.getColorByString(name ?? ""),
-                                        woka: wokaSrc,
-                                        isLogged: localUserStore.isLogged(),
-                                        availabilityStatus: get(availabilityStatusStore),
-                                        roomName: connectionManager.currentRoom?.roomName ?? "default",
-                                        visitCardUrl: gameManager.myVisitCardUrl,
-                                        userRoomToken: gameManager.getCurrentGameScene().connection?.userRoomToken,
+                    }
+                })
+            );
+
+            subscribeListeners.push(
+                locale.subscribe((value: Locales) => {
+                    chatIframe?.contentWindow?.postMessage(
+                        {
+                            type: "setLocale",
+                            data: {
+                                locale: value,
+                            },
+                        },
+                        "*"
+                    );
+                })
+            );
+
+            /*
+                        iframeLoadedStore.set(false);
+                        if (chatIframe && chatIframe.contentWindow && "postMessage" in chatIframe.contentWindow) {
+                            iframeLoadedStore.set(true);
+                            subscribeListeners.push(
+                                locale.subscribe((value: Locales) => {
+                                    chatIframe?.contentWindow?.postMessage(
+                                        {
+                                            type: "setLocale",
+                                            data: {
+                                                locale: value,
+                                            },
+                                        },
+                                        "*"
+                                    );
+                                })
+                            );
+                            subscribeListeners.push(
+                                currentPlayerWokaStore.subscribe((value) => {
+                                    if (value !== undefined) {
+                                        wokaSrc = value;
+                                        wokaDefinedStore.set(true);
+                                    }
+                                })
+                            );
+                            subscribeListeners.push(
+                                canSendInitMessageStore.subscribe((value) => {
+                                    if (value) {
+                                        iframeListener.sendSettingsToChatIframe();
+                                        chatIframe?.contentWindow?.postMessage(
+                                            {
+                                                type: "userData",
+                                                data: {
+                                                    ...localUserStore.getLocalUser(),
+                                                    name,
+                                                    playUri,
+                                                    authToken: localUserStore.getAuthToken(),
+                                                    color: getColorByString(name ?? ""),
+                                                    woka: wokaSrc,
+                                                    isLogged: localUserStore.isLogged(),
+                                                    availabilityStatus: get(availabilityStatusStore),
+                                                    roomName: connectionManager.currentRoom?.roomName ?? "default",
+                                                    visitCardUrl: gameManager.myVisitCardUrl,
+                                                    userRoomToken: gameManager.getCurrentGameScene().connection?.userRoomToken,
                                         klaxoonToolActivated: connectionManager.currentRoom?.klaxoonToolActivated,
                                         youtubeToolActivated: connectionManager.currentRoom?.youtubeToolActivated,
                                         googleDocsToolActivated: connectionManager.currentRoom?.googleDocsToolActivated,
@@ -112,56 +133,57 @@
                                             connectionManager.currentRoom?.googleSlidesToolActivated,
                                         klaxoonToolClientId: connectionManager.currentRoom?.klaxoonToolClientId,
                                         eraserToolActivated: connectionManager.currentRoom?.eraserToolActivated,
-                                    },
-                                },
-                                "*"
+                                                },
+                                            },
+                                            "*"
+                                        );
+                                        chatIframe?.contentWindow?.postMessage(
+                                            {
+                                                type: "setLocale",
+                                                data: {
+                                                    locale: $locale,
+                                                },
+                                            },
+                                            "*"
+                                        );
+                                    }
+                                })
                             );
-                            chatIframe?.contentWindow?.postMessage(
-                                {
-                                    type: "setLocale",
-                                    data: {
-                                        locale: $locale,
-                                    },
-                                },
-                                "*"
+                            subscribeListeners.push(
+                                availabilityStatusStore.subscribe((status) =>
+                                    iframeListener.sendAvailabilityStatusToChatIframe(status)
+                                )
                             );
-                        }
-                    })
-                );
-                subscribeListeners.push(
-                    availabilityStatusStore.subscribe((status) =>
-                        iframeListener.sendAvailabilityStatusToChatIframe(status)
-                    )
-                );
-                subscribeListeners.push(
-                    chatVisibilityStore.subscribe((visibility) => {
-                        try {
-                            gameManager.getCurrentGameScene()?.onResize();
-                        } catch (err) {
-                            console.info("gameManager doesn't exist!", err);
-                        }
-                        iframeListener.sendChatVisibilityToChatIframe(visibility);
-                    })
-                );
-                subscribeObservers.push(
-                    adminMessagesService.messageStream.subscribe((message) => {
-                        if (message.type === AdminMessageEventTypes.banned) {
-                            chatIframe.remove();
-                        }
-                        chatVisibilityStore.set(false);
-                        menuIconVisiblilityStore.set(false);
-                    })
-                );
+                            subscribeListeners.push(
+                                chatVisibilityStore.subscribe((visibility) => {
+                                    try {
+                                        gameManager.getCurrentGameScene()?.onResize();
+                                    } catch (err) {
+                                        console.info("gameManager doesn't exist!", err);
+                                    }
+                                    iframeListener.sendChatVisibilityToChatIframe(visibility);
+                                })
+                            );
+                            subscribeObservers.push(
+                                adminMessagesService.messageStream.subscribe((message) => {
+                                    if (message.type === AdminMessageEventTypes.banned) {
+                                        chatIframe.remove();
+                                    }
+                                    chatVisibilityStore.set(false);
+                                    menuIconVisiblilityStore.set(false);
+                                })
+                            );
 
-                //TODO delete it with new XMPP integration
-                //send list to chat iframe
-                subscribeListeners.push(
-                    writingStatusMessageStore.subscribe((list) => iframeListener.sendWritingStatusToChatIframe(list))
-                );
-                subscribeListeners.push(
-                    peerStore.subscribe((list) => iframeListener.sendPeerConnexionStatusToChatIframe(list.size > 0))
-                );
-            }
+                            //TODO delete it with new XMPP integration
+                            //send list to chat iframe
+                            subscribeListeners.push(
+                                writingStatusMessageStore.subscribe((list) => iframeListener.sendWritingStatusToChatIframe(list))
+                            );
+                            subscribeListeners.push(
+                                peerStore.subscribe((list) => iframeListener.sendPeerConnexionStatusToChatIframe(list.size > 0))
+                            );
+                        }
+             */
         });
     });
     onDestroy(() => {
@@ -227,7 +249,7 @@
 <div id="chatWindow" class:show={$chatVisibilityStore}>
     <input type="text" bind:this={searchElement} on:keydown={search} style="display: none;" />
     {#if $chatVisibilityStore}<div class="hide">
-            <button class="close-window" on:click={closeChat}>&#215;</button>
+            <button class="close-window" on:click={closeChat}><SidebarIcon /></button>
         </div>{/if}
     <iframe
         id="chatWorkAdventure"
@@ -270,9 +292,9 @@
             height: 100%;
         }
         .hide {
-            top: 13px;
+            top: 8px;
             position: absolute;
-            right: 12px;
+            right: 10px;
             width: fit-content;
             height: fit-content;
             .close-window {

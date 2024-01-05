@@ -17,7 +17,7 @@ import {
 } from "@workadventure/messages";
 import { z } from "zod";
 import { ITiledMap, ITiledMapLayer, ITiledMapObject, ITiledMapTileset } from "@workadventure/tiled-map-type-guard";
-import { GameMap, GameMapProperties, WAMFileFormat } from "@workadventure/map-editor";
+import { GameMap, GameMapProperties, isSuccess, WAMFileFormat } from "@workadventure/map-editor";
 import { userMessageManager } from "../../Administration/UserMessageManager";
 import { connectionManager } from "../../Connection/ConnectionManager";
 import { coWebsiteManager } from "../../WebRtc/CoWebsiteManager";
@@ -134,6 +134,7 @@ import { SelectCompanionScene, SelectCompanionSceneName } from "../Login/SelectC
 import { scriptUtils } from "../../Api/ScriptUtils";
 import { requestedScreenSharingState } from "../../Stores/ScreenSharingStore";
 import { JitsiBroadcastSpace } from "../../Streaming/Jitsi/JitsiBroadcastSpace";
+import { getMatrixClient } from "../../Matrix/MatrixConnectionManager";
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
 import { gameManager } from "./GameManager";
 import { EmoteManager } from "./EmoteManager";
@@ -230,6 +231,7 @@ export class GameScene extends DirtyScene {
 
     private modalVisibilityStoreUnsubscriber!: Unsubscriber;
     private unsubscribers: Unsubscriber[] = [];
+    private chatIsReadyStoreUnsubscriber!: Unsubscriber;
 
     mapUrlFile!: string;
     wamUrlFile?: string;
@@ -598,6 +600,34 @@ export class GameScene extends DirtyScene {
 
     //hook create scene
     create(): void {
+        // RANDOM TEST FOR MATRIX:
+        /*const matrixClient =*/ getMatrixClient()
+            .then(async (clientResult) => {
+                if (isSuccess(clientResult)) {
+                    const client = clientResult.value;
+                    const rooms = await client.getJoinedRooms();
+                    console.warn("rooms", rooms);
+                    console.warn("user id", client.getUserId());
+
+                    client.on("Room.timeline", (event, room, toStartOfTimeline, removed, data) => {
+                        console.warn("Room.timeline", event, room, toStartOfTimeline, removed, data);
+                    });
+
+                    client.on("RoomState.events", (event, state) => {
+                        console.warn("RoomState.events", event, state);
+                    });
+                } else {
+                    if (clientResult.error.type === "no-matrix-credentials") {
+                        console.warn("no matrix credentials");
+                    } else if (clientResult.error.type === "no-matrix-server") {
+                        console.warn("NO MATRIX SERVER CONFIGURED");
+                    } else {
+                        console.error("matrix error", clientResult.error.error);
+                    }
+                }
+            })
+            .catch((e) => console.error(e));
+
         this.input.topOnly = false;
         this.preloading = false;
         this.cleanupDone = false;
@@ -1161,14 +1191,6 @@ export class GameScene extends DirtyScene {
                     this._room.id,
                     this._room.group ?? undefined
                 );
-
-                // The xmppSettingsMessageStream is completed in the RoomConnection. No need to unsubscribe.
-                //eslint-disable-next-line rxjs/no-ignored-subscription, svelte/no-ignored-unsubscribe
-                this.connection.xmppSettingsMessageStream.subscribe((xmppSettingsMessage) => {
-                    if (xmppSettingsMessage) {
-                        iframeListener.sendXmppSettingsToChatIframe(xmppSettingsMessage);
-                    }
-                });
 
                 const broadcastService = new BroadcastService(
                     this.connection,

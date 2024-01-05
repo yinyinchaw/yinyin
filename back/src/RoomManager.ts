@@ -281,13 +281,7 @@ const roomManager = {
             }
             const today = new Date();
             pongTimeoutId = setTimeout(() => {
-                console.log(
-                    "Connection lost with user ",
-                    user?.uuid,
-                    user?.name,
-                    user?.userJid,
-                    "in room",
-                    room?.roomUrl,
+                console.log("Connection lost with user ", user?.uuid, user?.name, "in room", room?.roomUrl,
                     "at : ",
                     today.toLocaleString("en-GB")
                 );
@@ -296,7 +290,6 @@ const roomManager = {
                     `Connection lost with user
                     ${JSON.stringify(user?.uuid)}
                     ${JSON.stringify(user?.name)}
-                    ${JSON.stringify(user?.userJid)} 
                     in room 
                     ${JSON.stringify(room?.roomUrl)}`,
                     "debug"

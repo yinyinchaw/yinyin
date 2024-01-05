@@ -42,6 +42,7 @@ export class MucRoom extends AbstractRoom {
         public subscribe: boolean
     ) {
         super(xmppClient);
+        //@ts-ignore NO MORE JID , NO MORE MUCROOM
         this.presenceStore = new SearchableArrayStore<string, Writable<User>>((user) => get(user).jid);
         this.canLoadOlderMessagesStore = writable<boolean>(true);
         this.showDisabledLoadOlderMessagesStore = writable<boolean>(false);
@@ -137,6 +138,7 @@ export class MucRoom extends AbstractRoom {
             });
             debug(`[XMPP][${this.name}] << Get all subscribers received`);
             response.subscriptions.usersJid.forEach((userJid, i) => {
+                //@ts-ignore NO MORE JID , NO MORE MUCROOM
                 if (!this.presenceStore.find((user) => get(user).jid.includes(userJid))) {
                     this.addUserInactive(userJid, response.subscriptions.usersNick[i]);
                 }

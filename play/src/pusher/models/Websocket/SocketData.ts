@@ -9,7 +9,6 @@ import type {
     AvailabilityStatus,
     CharacterTextureMessage,
     CompanionTextureMessage,
-    MucRoomDefinition,
     BatchMessage,
     SpaceFilterMessage,
     SubMessage,
@@ -34,7 +33,6 @@ export type SocketData = {
     roomId: string;
     userId?: number; // User Id served by the back
     userUuid: string; // Admin UUID
-    userJid: string;
     isLogged: boolean;
     ipAddress: string;
     name: string;
@@ -48,10 +46,8 @@ export type SocketData = {
     tags: string[];
     visitCardUrl: string | null;
     userRoomToken: string | undefined;
-    jabberId: string;
-    jabberPassword: string | undefined | null;
+    pusherRoom: PusherRoom | undefined;
     activatedInviteUser: boolean | undefined;
-    mucRooms: Array<MucRoomDefinition>;
     applications?: Array<ApplicationDefinitionInterface> | null;
     canEdit: boolean;
     spaceUser: SpaceUser;
@@ -60,11 +56,11 @@ export type SocketData = {
     batchTimeout: NodeJS.Timeout | null;
     backConnection?: BackConnection;
     listenedZones: Set<Zone>;
-    pusherRoom: PusherRoom | undefined;
     spaces: Space[];
     spacesFilters: Map<string, SpaceFilterMessage[]>;
     cameraState?: boolean;
     microphoneState?: boolean;
     screenSharingState?: boolean;
     megaphoneState?: boolean;
+    matrixUserId: string | undefined;
 };

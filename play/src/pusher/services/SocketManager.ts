@@ -11,7 +11,6 @@ import {
     ErrorMessage,
     ErrorScreenMessage,
     JoinRoomMessage,
-    MucRoomDefinition,
     PlayerDetailsUpdatedMessage,
     PlayGlobalMessage,
     PusherToBackMessage,
@@ -20,7 +19,6 @@ import {
     ServerToClientMessage,
     UserMovesMessage,
     ViewportMessage,
-    XmppSettingsMessage,
     PusherToBackSpaceMessage,
     BackToPusherSpaceMessage,
     PartialSpaceUser,
@@ -43,9 +41,9 @@ import type { BackSpaceConnection, SocketData } from "../models/Websocket/Socket
 import { ProtobufUtils } from "../models/Websocket/ProtobufUtils";
 import type { GroupDescriptor, UserDescriptor, ZoneEventListener } from "../models/Zone";
 import type { AdminConnection, AdminSocketData } from "../models/Websocket/AdminSocketData";
-import { EJABBERD_DOMAIN, EMBEDDED_DOMAINS_WHITELIST } from "../enums/EnvironmentVariable";
 import { Space } from "../models/Space";
 import { UpgradeFailedData } from "../controllers/IoSocketController";
+import { EMBEDDED_DOMAINS_WHITELIST } from "../enums/EnvironmentVariable";
 import { emitInBatch } from "./IoSocketHelpers";
 import { clientEventsEmitter } from "./ClientEventsEmitter";
 import { gaugeManager } from "./GaugeManager";
@@ -211,7 +209,6 @@ export class SocketManager implements ZoneEventListener {
         try {
             const joinRoomMessage: JoinRoomMessage = {
                 userUuid: socketData.userUuid,
-                userJid: socketData.userJid,
                 IPAddress: socketData.ipAddress,
                 roomId: socketData.roomId,
                 name: socketData.name,
@@ -312,7 +309,7 @@ export class SocketManager implements ZoneEventListener {
             streamToPusher.write(pusherToBackMessage);
 
             const pusherRoom = await this.getOrCreateRoom(socketData.roomId);
-            pusherRoom.mucRooms = socketData.mucRooms;
+            //pusherRoom.mucRooms = socketData.mucRooms;
             pusherRoom.join(client);
         } catch (e) {
             Sentry.captureException(`An error occurred on "join_room" event ${e}`);
@@ -1009,38 +1006,6 @@ export class SocketManager implements ZoneEventListener {
         } catch (e) {
             Sentry.captureException(`An error occurred on "handleBanUserByUuidMessage" ${e}`);
             console.error(`An error occurred on "handleBanUserByUuidMessage" ${e}`);
-        }
-    }
-
-    emitXMPPSettings(client: Socket): void {
-        const socketData = client.getUserData();
-        const xmppSettings: XmppSettingsMessage = {
-            conferenceDomain: "conference." + EJABBERD_DOMAIN,
-            rooms: socketData.mucRooms.map((definition: MucRoomDefinition) => {
-                if (!definition.name || !definition.url || !definition.type) {
-                    throw new Error("Name URL and type cannot be empty!");
-                }
-                return {
-                    name: definition.name,
-                    url: definition.url,
-                    type: definition.type,
-                    subscribe: definition.subscribe,
-                };
-            }),
-            jabberId: socketData.jabberId,
-            jabberPassword: socketData.jabberPassword ?? "",
-        };
-
-        if (!socketData.disconnecting) {
-            client.send(
-                ServerToClientMessage.encode({
-                    message: {
-                        $case: "xmppSettingsMessage",
-                        xmppSettingsMessage: xmppSettings,
-                    },
-                }).finish(),
-                true
-            );
         }
     }
 

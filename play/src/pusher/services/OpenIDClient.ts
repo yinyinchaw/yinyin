@@ -104,7 +104,14 @@ class OpenIDClient {
     public getUserInfo(
         req: Request,
         res: Response
-    ): Promise<{ email: string; sub: string; access_token: string; username: string; locale: string }> {
+    ): Promise<{
+        email: string;
+        sub: string;
+        access_token: string;
+        username: string;
+        locale: string;
+        matrixUserId: string;
+    }> {
         const fullUrl = req.url;
         const cookies = req.cookies;
 
@@ -138,6 +145,7 @@ class OpenIDClient {
                         access_token: tokenSet.access_token ?? "",
                         username: res[OPID_USERNAME_CLAIM] as string,
                         locale: res[OPID_LOCALE_CLAIM] as string,
+                        matrixUserId: res.matrix_id as string,
                     };
                 });
             });

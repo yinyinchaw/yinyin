@@ -3,7 +3,6 @@ import { isUserData } from "@workadventure/messages";
 import {
     KLAXOON_ACTIVITY_PICKER_EVENT,
     isKlaxoonEvent,
-    isXmppSettingsMessageEvent,
     isChatMessage,
 } from "@workadventure/shared-utils";
 import { isUpdateWritingStatusChatListEvent } from "@workadventure/shared-utils/src/Events/UpdateWritingStatusChatListEvent";
@@ -47,10 +46,6 @@ export const isIframeEventWrapper = z.union([
     z.object({
         type: z.literal("availabilityStatus"),
         data: z.number(),
-    }),
-    z.object({
-        type: z.literal("xmppSettingsMessage"),
-        data: isXmppSettingsMessageEvent,
     }),
     z.object({
         type: z.literal("openCoWebsite"),

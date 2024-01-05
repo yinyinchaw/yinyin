@@ -1,6 +1,7 @@
 import { Subject } from "rxjs";
-import { availabilityStatusToJSON, XmppSettingsMessage } from "@workadventure/messages";
-import { KLAXOON_ACTIVITY_PICKER_EVENT, ChatMessage } from "@workadventure/shared-utils";
+import { availabilityStatusToJSON } from "@workadventure/messages";
+import { KLAXOON_ACTIVITY_PICKER_EVENT, ChatMessage, Color } from "@workadventure/shared-utils";
+import { get } from "svelte/store";
 import { HtmlUtils } from "../WebRtc/HtmlUtils";
 import {
     additionnalButtonsMenu,
@@ -18,6 +19,9 @@ import { analyticsClient } from "../Administration/AnalyticsClient";
 import { bannerStore, requestVisitCardsStore } from "../Stores/GameStore";
 import { modalIframeStore, modalVisibilityStore } from "../Stores/ModalStore";
 import { connectionManager } from "../Connection/ConnectionManager";
+import { chatIsReadyStore } from "../Stores/ChatStore";
+import { availabilityStatusStore } from "../Stores/MediaStore";
+import { gameManager } from "../Phaser/Game/GameManager";
 import type { EnterLeaveEvent } from "./Events/EnterLeaveEvent";
 import type { OpenPopupEvent } from "./Events/OpenPopupEvent";
 import type { OpenTabEvent } from "./Events/OpenTabEvent";
@@ -55,6 +59,7 @@ import type { AddPlayerEvent } from "./Events/AddPlayerEvent";
 import { ModalEvent } from "./Events/ModalEvent";
 import { AddButtonActionBarEvent } from "./Events/Ui/ButtonActionBarEvent";
 import { ReceiveEventEvent } from "./Events/ReceiveEventEvent";
+import { FirstMatrixPasswordEvent } from "./Events/FirstMatrixPasswordEvent";
 
 type AnswererCallback<T extends keyof IframeQueryMap> = (
     query: IframeQueryMap[T]["query"],
@@ -188,6 +193,9 @@ class IframeListener {
 
     private readonly _addButtonActionBarStream: Subject<AddActionsMenuKeyToRemotePlayerEvent> = new Subject();
     public readonly addButtonActionBarStream = this._addButtonActionBarStream.asObservable();
+
+    private readonly _firstMatrixPasswordStream: Subject<FirstMatrixPasswordEvent> = new Subject();
+    public readonly firstMatrixPasswordStream = this._firstMatrixPasswordStream.asObservable();
 
     private readonly iframes = new Map<HTMLIFrameElement, string | undefined>();
     private readonly iframeCloseCallbacks = new Map<MessageEventSource, Set<() => void>>();
@@ -468,6 +476,7 @@ class IframeListener {
                     } else if (iframeEvent.type == "removeButtonActionBar") {
                         additionnalButtonsMenu.removeAdditionnalButtonActionBar(iframeEvent.data);
                     } else if (iframeEvent.type == "chatReady") {
+                        chatIsReadyStore.set(true);
                         this.chatReady = true;
                         if (this.messagesToChatQueue.length > 0) {
                             for (const message of this.messagesToChatQueue) {
@@ -481,6 +490,8 @@ class IframeListener {
                     } else if (iframeEvent.type == "closeBanner") {
                         warningContainerStore.set(false);
                         bannerStore.set(null);
+                    } else if (iframeEvent.type == "firstMatrixPassword") {
+                        this._firstMatrixPasswordStream.next(iframeEvent.data);
                     } else if (iframeEvent.type == KLAXOON_ACTIVITY_PICKER_EVENT) {
                         // dispacth event on windows
                         // @ts-ignore
@@ -875,13 +886,6 @@ class IframeListener {
         });
     }
 
-    sendXmppSettingsToChatIframe(xmppSettingsMessage: XmppSettingsMessage) {
-        this.postMessageToChat({
-            type: "xmppSettingsMessage",
-            data: xmppSettingsMessage,
-        });
-    }
-
     sendLeaveMucEventToChatIframe(url: string) {
         if (!connectionManager.currentRoom) {
             throw new Error("Race condition : Current room is not defined yet");
@@ -923,12 +927,12 @@ class IframeListener {
     // << TODO delete with chat XMPP integration for the discussion circle
     sendWritingStatusToChatIframe(list: Set<PlayerInterface>) {
         const usersTyping: Array<{
-            jid?: string;
+            uuid?: string;
             name?: string;
         }> = [];
         list.forEach((user) =>
             usersTyping.push({
-                jid: user.userJid === "fake" ? undefined : user.userJid,
+                uuid: user.userUuid === "dummy" ? undefined : user.userUuid,
                 name: user.name,
             })
         );
@@ -972,6 +976,34 @@ class IframeListener {
         });
     }
     // end delete >>
+    sendUserDataToChatIframe() {
+        // TODO : Fetch woka from the store and send it to the chat iframe
+        // TODO : Split those data in multiple messages to avoid sending too much data
+        const wokaSrc =
+            " data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
+        const playUri = window.location.protocol + "//" + window.location.hostname + window.location.pathname;
+        const name = localUserStore.getName() ?? "unknown";
+        this.chatIframe?.contentWindow?.postMessage(
+            {
+                type: "userData",
+                data: {
+                    ...localUserStore.getLocalUser(),
+                    name,
+                    playUri,
+                    authToken: localUserStore.getAuthToken(),
+                    loginToken: localUserStore.getMatrixLoginToken(),
+                    color: Color.getColorByString(name ?? ""),
+                    woka: wokaSrc,
+                    isLogged: localUserStore.isLogged(),
+                    availabilityStatus: get(availabilityStatusStore),
+                    roomName: connectionManager.currentRoom?.roomName ?? "default",
+                    visitCardUrl: gameManager.myVisitCardUrl,
+                    userRoomToken: gameManager.getCurrentGameScene().connection?.userRoomToken,
+                },
+            },
+            "*"
+        );
+    }
 
     /**
      * Sends the message... to the chat iFrame.

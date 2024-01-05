@@ -11,22 +11,14 @@ import {
     SpaceUser,
     CompanionDetail,
 } from "@workadventure/messages";
-import Jwt, { JsonWebTokenError } from "jsonwebtoken";
-import { v4 as uuid } from "uuid";
-import { JID } from "stanza";
+import { JsonWebTokenError } from "jsonwebtoken";
 import * as Sentry from "@sentry/node";
 import { Color } from "@workadventure/shared-utils";
 import type { AdminSocketTokenData } from "../services/JWTTokenManager";
 import { jwtTokenManager, tokenInvalidException } from "../services/JWTTokenManager";
 import type { FetchMemberDataByUuidResponse } from "../services/AdminApi";
 import { Socket, socketManager, SocketUpgradeFailed } from "../services/SocketManager";
-import {
-    ADMIN_SOCKETS_TOKEN,
-    DISABLE_ANONYMOUS,
-    EJABBERD_DOMAIN,
-    EJABBERD_JWT_SECRET,
-    SOCKET_IDLE_TIMER,
-} from "../enums/EnvironmentVariable";
+import { ADMIN_SOCKETS_TOKEN, DISABLE_ANONYMOUS, SOCKET_IDLE_TIMER } from "../enums/EnvironmentVariable";
 import type { Zone } from "../models/Zone";
 import type { AdminSocketData } from "../models/Websocket/AdminSocketData";
 import type { AdminMessageInterface } from "../models/Websocket/Admin/AdminMessages";
@@ -326,6 +318,7 @@ export class IoSocketController {
 
                         const userIdentifier = tokenData ? tokenData.identifier : "";
                         const isLogged = !!tokenData?.accessToken;
+                        const matrixUserId = tokenData?.matrixUserId;
 
                         let memberTags: string[] = [];
                         let memberVisitCardUrl: string | null = null;
@@ -342,9 +335,6 @@ export class IoSocketController {
                             companionTexture: undefined,
                             messages: [],
                             userRoomToken: undefined,
-                            jabberId: null,
-                            jabberPassword: null,
-                            mucRooms: [],
                             activatedInviteUser: true,
                             canEdit: false,
                         };
@@ -430,25 +420,6 @@ export class IoSocketController {
                             throw new Error("User cannot access this world");
                         }
 
-                        if (!userData.jabberId) {
-                            // If there is no admin, or no user, let's log users using JWT tokens
-                            userData.jabberId = JID.create({
-                                local: userIdentifier,
-                                domain: EJABBERD_DOMAIN,
-                                resource: uuid(),
-                            });
-                            if (EJABBERD_JWT_SECRET) {
-                                userData.jabberPassword = Jwt.sign({ jid: userData.jabberId }, EJABBERD_JWT_SECRET, {
-                                    expiresIn: "1d",
-                                    algorithm: "HS256",
-                                });
-                            } else {
-                                userData.jabberPassword = "no_password_set";
-                            }
-                        } else {
-                            userData.jabberId = `${userData.jabberId}/${uuid()}`;
-                        }
-
                         if (upgradeAborted.aborted) {
                             console.info("Ouch! Client disconnected before we could upgrade it!");
                             /* You must not upgrade now */
@@ -462,7 +433,6 @@ export class IoSocketController {
                             roomId,
                             userId: undefined,
                             userUuid: userData.userUuid,
-                            userJid: userData.jabberId,
                             isLogged,
                             ipAddress,
                             name,
@@ -486,10 +456,7 @@ export class IoSocketController {
                             tags: memberTags,
                             visitCardUrl: memberVisitCardUrl,
                             userRoomToken: memberUserRoomToken,
-                            jabberId: userData.jabberId,
-                            jabberPassword: userData.jabberPassword,
                             activatedInviteUser: userData.activatedInviteUser || undefined,
-                            mucRooms: userData.mucRooms || [],
                             applications: userData.applications,
                             canEdit: userData.canEdit ?? false,
                             spaceUser: SpaceUser.fromPartial({
@@ -528,6 +495,7 @@ export class IoSocketController {
                             microphoneState: undefined,
                             screenSharingState: undefined,
                             megaphoneState: undefined,
+                            matrixUserId,
                         };
 
                         /* This immediately calls open handler, you must not use res after this call */
@@ -621,8 +589,6 @@ export class IoSocketController {
                     };
 
                     await socketManager.handleJoinRoom(socket);
-
-                    socketManager.emitXMPPSettings(socket);
 
                     //get data information and show messages
                     if (socketData.messages && Array.isArray(socketData.messages)) {

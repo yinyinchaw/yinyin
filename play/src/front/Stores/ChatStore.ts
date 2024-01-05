@@ -7,7 +7,7 @@ import { mediaManager, NotificationType } from "../WebRtc/MediaManager";
 import { playersStore } from "./PlayersStore";
 
 export const chatZoneLiveStore = writable(false);
-export const chatVisibilityStore = writable(false);
+export const chatVisibilityStore = writable(true);
 
 export const chatInputFocusStore = writable(false);
 
@@ -69,7 +69,7 @@ export const chatMessagesService = {
                 name: author.name,
                 active: true,
                 isMe: false,
-                jid: author.userJid,
+                uuid: "",
                 isMember: false,
                 color: author.color ?? undefined,
             },
@@ -86,7 +86,7 @@ export const chatMessagesService = {
                 name: author.name,
                 active: true,
                 isMe: false,
-                jid: author.userJid,
+                uuid: "",
                 isMember: false,
                 color: author.color ?? undefined,
             },
@@ -115,7 +115,7 @@ export const chatMessagesService = {
                 name: author.name,
                 active: true,
                 isMe: false,
-                jid: author.userJid,
+                uuid: "",
                 isMember: false,
                 color: author.color ?? undefined,
             },
@@ -149,7 +149,7 @@ export const chatMessagesService = {
                 name: author.name,
                 active: true,
                 isMe: false,
-                jid: author.userJid,
+                uuid: author.userUuid,
                 isMember: false,
                 color: author.color ?? undefined,
             },
@@ -175,7 +175,7 @@ export const chatMessagesService = {
                 name: author.name,
                 active: true,
                 isMe: false,
-                jid: author.userJid,
+                uuid: author.userUuid,
                 isMember: false,
                 color: author.color ?? undefined,
             },
@@ -202,3 +202,8 @@ export const chatSubMenuVisibilityStore = createChatSubMenuVisibilityStore();
 
 export const wokaDefinedStore = writable<boolean>(false);
 export const iframeLoadedStore = writable<boolean>(false);
+
+/***********************************************************/
+/*                   NEW MATRIX CLEAN                      */
+/***********************************************************/
+export const chatIsReadyStore = writable<boolean>(false);

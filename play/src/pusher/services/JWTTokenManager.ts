@@ -7,6 +7,7 @@ export const AuthTokenData = z.object({
     accessToken: z.string().optional(),
     username: z.string().optional(),
     locale: z.string().optional(),
+    matrixUserId: z.string().optional(),
 });
 export type AuthTokenData = z.infer<typeof AuthTokenData>;
 
@@ -27,8 +28,14 @@ export class JWTTokenManager {
         return AdminSocketTokenData.parse(verifiedToken);
     }
 
-    public createAuthToken(identifier: string, accessToken?: string, username?: string, locale?: string): string {
-        return Jwt.sign({ identifier, accessToken, username, locale }, SECRET_KEY, { expiresIn: "30d" });
+    public createAuthToken(
+        identifier: string,
+        accessToken?: string,
+        username?: string,
+        locale?: string,
+        matrixUserId?: string
+    ): string {
+        return Jwt.sign({ identifier, accessToken, username, locale, matrixUserId }, SECRET_KEY, { expiresIn: "30d" });
     }
 
     public verifyJWTToken(token: string, ignoreExpiration = false): AuthTokenData {

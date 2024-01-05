@@ -25,7 +25,7 @@ export type User = {
     role?: string;
     chatState?: ChatState;
     isMe: boolean;
-    jid: string;
+    //jid: string;
     isMember: boolean;
     availabilityStatus?: number;
     visitCardUrl?: string;

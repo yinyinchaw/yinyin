@@ -20,7 +20,7 @@ export const isAuthor = z.object({
     name: z.string(),
     active: z.boolean(),
     isMe: z.boolean(),
-    jid: z.string(),
+    uuid: z.string(),
     isMember: z.boolean(),
     color: z.string().optional(),
 });

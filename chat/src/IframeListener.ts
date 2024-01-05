@@ -57,27 +57,28 @@ class IframeListener {
                                 enableChatDisconnectedListStore.set(iframeEvent.data.enableChatDisconnectedList);
                                 break;
                             }
-                            case "xmppSettingsMessage": {
-                                chatConnectionManager.initXmppSettings(iframeEvent.data);
-                                break;
-                            }
                             case "userData": {
                                 iframeEvent.data.name = iframeEvent.data.name.replace(emojiRegex, "");
+                                //console.log(iframeEvent.data);
                                 userStore.set(iframeEvent.data);
                                 chatConnectionManager.initUser(
-                                    iframeEvent.data.playUri,
-                                    iframeEvent.data.uuid,
                                     iframeEvent.data.klaxoonToolActivated,
                                     iframeEvent.data.youtubeToolActivated,
                                     iframeEvent.data.googleDocsToolActivated,
                                     iframeEvent.data.googleSheetsToolActivated,
                                     iframeEvent.data.googleSlidesToolActivated,
                                     iframeEvent.data.eraserToolActivated,
-                                    iframeEvent.data.authToken,
                                     iframeEvent.data.klaxoonToolClientId
                                 );
-                                if (chatConnectionManager.connection) {
-                                    mucRoomsStore.sendUserInfos();
+                                if (iframeEvent.data.authToken) {
+                                    console.log("IframeListener => init => authToken", iframeEvent.data.authToken);
+                                    chatConnectionManager.authToken = iframeEvent.data.authToken;
+                                    chatConnectionManager.start();
+                                }
+                                if (iframeEvent.data.loginToken) {
+                                    console.log("IframeListener => init => loginToken", iframeEvent.data.loginToken);
+                                    chatConnectionManager.loginToken = iframeEvent.data.loginToken;
+                                    chatConnectionManager.start();
                                 }
                                 break;
                             }
@@ -89,19 +90,23 @@ class IframeListener {
                                 if (!get(enableChat)) {
                                     return;
                                 }
-                                (await chatConnectionManager.connectionPromise).joinMuc(
+                            /*
+                            (await chatConnectionManager.connectionPromise).joinMuc(
                                     iframeEvent.data.name,
                                     iframeEvent.data.url,
                                     iframeEvent.data.type,
                                     iframeEvent.data.subscribe
                                 );
+                             */
                                 break;
                             }
                             case "leaveMuc": {
                                 if (!get(enableChat)) {
                                     return;
                                 }
-                                (await chatConnectionManager.connectionPromise).leaveMuc(iframeEvent.data.url);
+                            /*
+                            (await chatConnectionManager.connectionPromise).leaveMuc(iframeEvent.data.url);
+                             */
                                 break;
                             }
                             case "updateWritingStatusChatList": {
@@ -117,10 +122,11 @@ class IframeListener {
                                 if (
                                     mucRoomDefault &&
                                     iframeEvent.data.author &&
-                                    iframeEvent.data.author.jid !== "fake"
+                                    iframeEvent.data.author.uuid !== "dummy"
                                 ) {
                                     try {
-                                        userData = mucRoomDefault.getUserByJid(iframeEvent.data.author.jid);
+                                        // NOTE: there is no jid anymore!
+                                        userData = mucRoomDefault.getUserByJid(iframeEvent.data.author.uuid);
                                     } catch (e) {
                                         console.warn("Can't fetch user data from Ejabberd", e);
                                         userData = iframeEvent.data.author;
@@ -147,7 +153,7 @@ class IframeListener {
                             case "comingUser": {
                                 const mucRoomDefault = mucRoomsStore.getDefaultRoom();
                                 let userData: User;
-                                if (mucRoomDefault && iframeEvent.data.author.jid !== "fake") {
+                                if (mucRoomDefault && iframeEvent.data.author.uuid !== "dummy") {
                                     let userDataDefaultMucRoom = mucRoomDefault.getUserByJid(
                                         iframeEvent.data.author.jid
                                     );
@@ -157,7 +163,8 @@ class IframeListener {
                                         userDataDefaultMucRoom = {
                                             name: "Unknown",
                                             active: true,
-                                            jid: iframeEvent.data.author.jid,
+                                            //jid: iframeEvent.data.author.jid,
+                                            uuid: iframeEvent.data.author.uuid,
                                             isMe: false,
                                             isMember: false,
                                         };
@@ -304,7 +311,7 @@ class IframeListener {
         });
     }
 
-    sendToParent(message: lookingLikeIframeEventWrapper) {
+    public sendToParent(message: lookingLikeIframeEventWrapper) {
         debug(`iFrameListener => message sent to parent => ${JSON.stringify(message)}`);
         window.parent.postMessage(message, "*");
     }

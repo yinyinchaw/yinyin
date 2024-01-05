@@ -88,13 +88,14 @@ const mapEditor: DeepPartial<Translation["mapEditor"]> = {
         },
         advancedOptions: "Options avancées",
         speakerMegaphoneProperties: {
-            label: "Zone conférencier",
+            id: "Identifiant de la zone de haut-parleur utilisé pour créer une salle unique",
+            label: "Zone de diffusion pour haut-parleur",
             description: "",
             nameLabel: "Nom de la zone de diffusion",
             namePlaceholder: "MaZoneDeDiffusion",
         },
         listenerMegaphoneProperties: {
-            label: "Zone participant",
+            label: "Zone de diffusion pour auditeur",
             description: "",
             nameLabel: "Nom de la zone de diffusion",
             namePlaceholder: "MaZoneDeDiffusion",

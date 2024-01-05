@@ -86,13 +86,14 @@ const mapEditor: BaseTranslation = {
         },
         advancedOptions: "Advanced Options",
         speakerMegaphoneProperties: {
-            label: "Speaker zone",
+            id: "Speaker zone identfier use for create unique room",
+            label: "Speaker zone for megaphone",
             description: "",
             nameLabel: "Name",
             namePlaceholder: "MySpeakerZone",
         },
         listenerMegaphoneProperties: {
-            label: "Attendees zone",
+            label: "ListenerZone for megaphone",
             description: "",
             nameLabel: "SpeakerZone Name",
             namePlaceholder: "MySpeakerZone",

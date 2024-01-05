@@ -235,7 +235,6 @@ export class GameRoom implements BrothersFinder {
         const user = await User.create(
             this.nextUserId,
             joinRoomMessage.userUuid,
-            joinRoomMessage.userJid,
             joinRoomMessage.isLogged,
             joinRoomMessage.IPAddress,
             position,

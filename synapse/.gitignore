@@ -1,0 +1,6 @@
+*
+
+!federation
+!homeserver.template.yaml
+!start.sh
+!matrix.workadventure.localhost.log.config

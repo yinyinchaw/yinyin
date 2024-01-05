@@ -129,6 +129,9 @@ export const EnvironmentVariables = z.object({
     PEER_VIDEO_RECOMMENDED_BANDWIDTH: PositiveIntAsString.optional(),
     PEER_SCREEN_SHARE_LOW_BANDWIDTH: PositiveIntAsString.optional(),
     PEER_SCREEN_SHARE_RECOMMENDED_BANDWIDTH: PositiveIntAsString.optional(),
+    MATRIX_DOMAIN: z.string().optional(),
+    MATRIX_API_URI: z.string().optional(),
+    MATRIX_PUBLIC_URI: z.string().optional(),
 });
 
 export type EnvironmentVariables = z.infer<typeof EnvironmentVariables>;

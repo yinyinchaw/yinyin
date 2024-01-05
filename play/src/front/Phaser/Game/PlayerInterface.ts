@@ -4,7 +4,6 @@ import type { WokaTextureDescriptionInterface } from "../Entity/PlayerTextures";
 
 export interface PlayerInterface {
     userId: number;
-    userJid: string;
     name: string;
     characterTextures: WokaTextureDescriptionInterface[];
     visitCardUrl: string | null;

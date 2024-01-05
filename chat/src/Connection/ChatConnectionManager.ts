@@ -1,21 +1,20 @@
-import { XmppSettingsMessage } from "@workadventure/messages";
 import { KlaxoonService } from "@workadventure/shared-utils";
-import { get } from "svelte/store";
+import { get, writable, Writable } from "svelte/store";
 import Debug from "debug";
-import { Deferred } from "ts-deferred/index";
-import { XmppClient } from "../Xmpp/XmppClient";
-import { connectionEstablishedStore, enableChat } from "../Stores/ChatStore";
+import { MatrixClient as Matrix } from "matrix-js-sdk";
 import { xmppServerConnectionStatusStore } from "../Stores/MucRoomsStore";
+import { MatrixClient } from "../Matrix/MatrixClient";
+import { connectionEstablishedStore, enableChat } from "../Stores/ChatStore";
 
 const debug = Debug("chat");
 
 class ChatConnectionManager {
-    private uuid: string;
-    private playUri: string;
-    private authToken?: string;
-    private xmppSettingsMessage?: XmppSettingsMessage;
-    private xmppClient?: XmppClient;
-    private deferredXmppClient: Deferred<XmppClient>;
+    private _authToken?: string;
+    // A token that can be exchanged for a Matrix access token using the m.login.token endpoint.
+    private _loginToken?: string;
+    private matrixClient?: MatrixClient;
+    //private deferredXmppClient: Deferred<XmppClient>;
+    public isConnected: Writable<boolean> = writable(false);
 
     private _klaxoonToolActivated = false;
     private _klaxoonToolClientId: string | undefined = undefined;
@@ -25,29 +24,20 @@ class ChatConnectionManager {
     private _googleSlidesToolActivated = false;
     private _eraserToolActivated = false;
 
-    constructor() {
-        this.uuid = "";
-        this.playUri = "";
+    /*constructor() {
         this.deferredXmppClient = new Deferred<XmppClient>();
-    }
+    }*/
 
+    // TODO: CHECK THIS IS CALLED AFTER MERGE TO MATRIX
     initUser(
-        playUri: string,
-        uuid: string,
         klaxoonToolActivated: boolean,
         youtubeToolActivated: boolean,
         googleDocsToolActivated: boolean,
         googleSheetsToolActivated: boolean,
         googleSlidesToolActivated: boolean,
         eraserToolActivated: boolean,
-        authToken?: string,
         klaxoonToolClientId?: string
     ) {
-        debug("chatConnectionManager => initUser");
-        this.uuid = uuid;
-        this.authToken = authToken;
-        this.playUri = playUri;
-
         this._klaxoonToolActivated = klaxoonToolActivated;
         this._klaxoonToolClientId = klaxoonToolClientId;
         if (klaxoonToolClientId) {
@@ -58,88 +48,90 @@ class ChatConnectionManager {
         this._googleSheetsToolActivated = googleSheetsToolActivated;
         this._googleSlidesToolActivated = googleSlidesToolActivated;
         this._eraserToolActivated = eraserToolActivated;
-
-        this.start();
     }
 
-    initXmppSettings(xmppSettingsMessages: XmppSettingsMessage) {
-        debug("chatConnectionManager => initXmppSettings");
-        this.xmppSettingsMessage = xmppSettingsMessages;
-
-        this.start();
+    set authToken(value: string) {
+        this._authToken = value;
     }
 
-    get connectionPromise(): Promise<XmppClient> {
+    set loginToken(value: string) {
+        this._loginToken = value;
+    }
+
+    get connectionOrFail(): MatrixClient {
+        if (!this.matrixClient) {
+            throw new Error("No chat connection with Matrix server!");
+        }
+        return this.matrixClient;
+    }
+
+    get matrixOrFail(): Matrix {
+        if (!this.matrixClient || !this.matrixClient.matrix) {
+            throw new Error("No chat connection with Matrix server!");
+        }
+        return this.matrixClient.matrix;
+    }
+
+    /*get connectionPromise(): Promise<XmppClient> {
         return this.deferredXmppClient.promise;
-    }
+    }*/
 
-    get connection(): XmppClient | undefined {
-        return this.xmppClient;
+    get connection(): MatrixClient | undefined {
+        return this.matrixClient;
     }
 
     public start() {
+        // DISABLE EVERYTHING!
+        return;
         debug("chatConnectionManager => start");
-        if (this.uuid !== "" && this.authToken && this.playUri !== "" && this.xmppSettingsMessage && !this.xmppClient) {
+        // Old code
+        if (this._authToken && !this.matrixClient) {
             debug("chatConnectionManager => start => all parameters are OK");
             if (get(enableChat)) {
-                this.xmppClient = new XmppClient(this.xmppSettingsMessage);
-                this.xmppClient.readyPromise
-                    .then(() => {
-                        this.deferredXmppClient.resolve(this.xmppClient);
+                this.matrixClient = new MatrixClient("http://matrix.workadventure.localhost");
+                this.matrixClient
+                    .loginWithJwt(this._authToken)
+                    .then(async () => {
+                        await this.matrixClient?.start();
+                        this.isConnected.set(true);
+                        //this.deferredXmppClient.resolve(this.xmppClient);
                     })
                     .catch((e) => {
-                        this.deferredXmppClient.reject(e);
+                        //this.deferredXmppClient.reject(e);
+                        console.error("ChatConnectionManager => start", e);
                     });
             } else {
-                this.deferredXmppClient.reject("Chat is disabled");
+                //this.deferredXmppClient.reject("Chat is disabled");
                 xmppServerConnectionStatusStore.set(true);
             }
             connectionEstablishedStore.set(true);
-        } else {
-            debug(
-                `chatConnectionManager => start => all parameters are NOT OK ${JSON.stringify({
-                    uuid: this.uuid,
-                    authToken: this.authToken,
-                    playUrl: this.playUri,
-                    xmppSettingsMessage: this.xmppSettingsMessage,
-                    xmppClient: !this.xmppClient,
-                })}`
-            );
         }
-
-        /*this.chatConnection.xmppConnectionNotAuthorizedStream.subscribe(() => {
-            if (this.setTimeout) {
-                clearTimeout(this.setTimeout);
+        // New code
+        if (this._loginToken && !this.matrixClient) {
+            debug("chatConnectionManager => start => all parameters are OK");
+            if (get(enableChat)) {
+                this.matrixClient = new MatrixClient("http://matrix.workadventure.localhost");
+                this.matrixClient
+                    .loginWithSso(this._loginToken)
+                    .then(async () => {
+                        await this.matrixClient?.start();
+                        this.isConnected.set(true);
+                        //this.deferredXmppClient.resolve(this.xmppClient);
+                    })
+                    .catch((e) => {
+                        //this.deferredXmppClient.reject(e);
+                        console.error("ChatConnectionManager => start", e);
+                    });
+            } else {
+                //this.deferredXmppClient.reject("Chat is disabled");
+                xmppServerConnectionStatusStore.set(true);
             }
-
-            //close connection before start
-            this.chatConnection?.close();
-            this.chatConnection = undefined;
-            return (this.setTimeout = setTimeout(() => {
-                if (this.chatConnection == undefined || this.chatConnection.isClose) {
-                    this.start();
-                }
-            }, 10000));
-        });
-
-        this.chatConnection.connectionErrorStream.subscribe(() => {
-            if (this.setTimeout) {
-                clearTimeout(this.setTimeout);
-            }
-
-            //close connection before start
-            this.chatConnection?.close();
-            this.chatConnection = undefined;
-            return (this.setTimeout = setTimeout(() => {
-                if (this.chatConnection == undefined || this.chatConnection.isClose) {
-                    this.start();
-                }
-            }, 10000));
-        });*/
+            connectionEstablishedStore.set(true);
+        }
     }
 
     get isClosed(): boolean {
-        return this.xmppClient == undefined || this.xmppClient.isClosed;
+        return this.matrixClient == undefined;
     }
 
     get klaxoonToolIsActivated(): boolean {

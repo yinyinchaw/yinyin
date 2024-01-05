@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
 
     const config = {
+    define: {global: 'window'},
         server: {
             port: 8080,
             hmr: {
@@ -26,9 +27,6 @@ export default defineConfig(({ mode }) => {
         base: "./",
         build: {
             sourcemap: true,
-            rollupOptions: {
-                plugins: [rollupNodePolyFill()],
-            },
         },
         plugins: [
             svelte({
@@ -65,16 +63,16 @@ export default defineConfig(({ mode }) => {
             pluginRewriteAll(),
         ],
         optimizeDeps: {
+        include: [
+            'olm',
+        ],
             esbuildOptions: {
                 define: {
                     global: "globalThis",
                 },
                 plugins: [
-                    NodeGlobalsPolyfillPlugin({
-                        process: true,
-                        buffer: true,
-                    }),
-                    NodeModulesPolyfillPlugin(),
+                // @ts-ignore-next-line
+                NodeGlobalsPolyfillPlugin({process: false, buffer: true,})
                 ],
             },
         },

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { KLAXOON_ACTIVITY_PICKER_EVENT, isKlaxoonEvent, isXmppSettingsMessageEvent } from "@workadventure/shared-utils";
+import { KLAXOON_ACTIVITY_PICKER_EVENT, isKlaxoonEvent } from "@workadventure/shared-utils";
 import { isStartWritingEvent, isStopWritingEvent } from "@workadventure/shared-utils/src/Events/WritingEvent";
 import { isUpdateWritingStatusChatListEvent } from "@workadventure/shared-utils/src/Events/UpdateWritingStatusChatListEvent";
 import { isChatEvent, isChatMessage } from "../../../../../libs/shared-utils/src/Events/ChatEvent";
@@ -58,6 +58,7 @@ import { isShowBusinessCardEvent } from "./ShowBusinessCardEvent";
 import { isModalEvent } from "./ModalEvent";
 import { isAddButtonActionBarEvent, isRemoveButtonActionBarEvent } from "./Ui/ButtonActionBarEvent";
 import { isBannerEvent } from "./Ui/BannerEvent";
+import { FirstMatrixPasswordEvent } from "./FirstMatrixPasswordEvent";
 import { isTeleportPlayerToEventConfig } from "./TeleportPlayerToEvent";
 import { isSendEventEvent } from "./SendEventEvent";
 import { isReceiveEventEvent } from "./ReceiveEventEvent";
@@ -309,6 +310,10 @@ export const isIframeEventWrapper = z.union([
         data: z.undefined(),
     }),
     z.object({
+        type: z.literal("firstMatrixPassword"),
+        data: FirstMatrixPasswordEvent,
+    }),
+    z.object({
         type: z.literal(KLAXOON_ACTIVITY_PICKER_EVENT),
         payload: isKlaxoonEvent,
     }),
@@ -436,10 +441,6 @@ export const isIframeResponseEvent = z.union([
     z.object({
         type: z.literal("availabilityStatus"),
         data: z.number(),
-    }),
-    z.object({
-        type: z.literal("xmppSettingsMessage"),
-        data: isXmppSettingsMessageEvent,
     }),
 
     // TODO will be deleted if timeline is becoming a MUC room

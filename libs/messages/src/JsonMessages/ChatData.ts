@@ -3,9 +3,11 @@ import { z } from "zod";
 export const isUserData = z.object({
   uuid: z.string(),
   email: z.string().nullable().optional(),
+  matrixUserId: z.string().nullable().optional(),
   name: z.string(),
   playUri: z.string(),
-  authToken: z.optional(z.string()),
+  authToken: z.optional(z.string()), // JWT auth token (deprecated?)
+  loginToken: z.optional(z.string()), // SSO auth token (returned by the SSO flow)
   color: z.string(),
   woka: z.string(),
   isLogged: z.boolean(),
