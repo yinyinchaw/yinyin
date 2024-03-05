@@ -165,11 +165,11 @@ import { RemotePlayersRepository } from "./RemotePlayersRepository";
 import type { PlayerDetailsUpdate } from "./RemotePlayersRepository";
 import { IframeEventDispatcher } from "./IframeEventDispatcher";
 import { PlayerVariablesManager } from "./PlayerVariablesManager";
-import { uiWebsiteManager } from "./UI/UIWebsiteManager";
 import { EntitiesCollectionsManager } from "./MapEditor/EntitiesCollectionsManager";
 import { DEPTH_BUBBLE_CHAT_SPRITE } from "./DepthIndexes";
 import { ScriptingEventsManager } from "./ScriptingEventsManager";
 import { faviconManager } from "./../../WebRtc/FaviconManager";
+import { UIWebsiteManager } from "./UI/UIWebsiteManager";
 import EVENT_TYPE = Phaser.Scenes.Events;
 import Texture = Phaser.Textures.Texture;
 import Sprite = Phaser.GameObjects.Sprite;
@@ -294,6 +294,7 @@ export class GameScene extends DirtyScene {
     private playersDebugLogAlreadyDisplayed = false;
     private _broadcastService: BroadcastService | undefined;
     private hideTimeout: ReturnType<typeof setTimeout> | undefined;
+    private uiWebsiteManager: UIWebsiteManager;
 
     constructor(private _room: Room, customKey?: string | undefined) {
         super({
@@ -317,6 +318,7 @@ export class GameScene extends DirtyScene {
         this.connectionAnswerPromiseDeferred = new Deferred<RoomJoinedMessageInterface>();
         this.loader = new Loader(this);
         this.superLoad = new SuperLoaderPlugin(this);
+        this.uiWebsiteManager = new UIWebsiteManager();
     }
 
     //hook preload scene
@@ -1722,18 +1724,19 @@ export class GameScene extends DirtyScene {
                     return;
                 }
                 const escapedMessage = HtmlUtils.escapeHtml(openPopupEvent.message);
-                let html = '<div id="container" hidden>';
+                let html =
+                    '<div id="container" class="relative bg-contrast/50 backdrop-blur pt-4 overflow-hidden rounded-lg text-white" hidden>';
                 if (escapedMessage) {
-                    html += `<div class="with-title is-centered">
+                    html += `<div class="text-xxs text-center px-4">
 ${escapedMessage}
  </div> `;
                 }
 
-                const buttonContainer = '<div class="buttonContainer"</div>';
+                const buttonContainer = '<div class="buttonContainer bg-contrast/50 py-4 px-4 mt-2"</div>';
                 html += buttonContainer;
                 let id = 0;
                 for (const button of openPopupEvent.buttons) {
-                    html += `<button type="button" class="is-${HtmlUtils.escapeHtml(
+                    html += `<button type="button" class="btn btn-xs justify-center w-full pb-4 ${HtmlUtils.escapeHtml(
                         button.className ?? ""
                     )}" id="popup-${openPopupEvent.popupId}-${id}">${HtmlUtils.escapeHtml(button.label)}</button>`;
                     id++;
@@ -2141,15 +2144,15 @@ ${escapedMessage}
         });
 
         iframeListener.registerAnswerer("openUIWebsite", (websiteConfig) => {
-            return uiWebsiteManager.open(websiteConfig);
+            return this.uiWebsiteManager.open(websiteConfig);
         });
 
         iframeListener.registerAnswerer("getUIWebsites", () => {
-            return uiWebsiteManager.getAll();
+            return this.uiWebsiteManager.getAll();
         });
 
         iframeListener.registerAnswerer("getUIWebsiteById", (websiteId) => {
-            const website = uiWebsiteManager.getById(websiteId);
+            const website = this.uiWebsiteManager.getById(websiteId);
             if (!website) {
                 throw new Error("Unknown ui-website");
             }
@@ -2157,7 +2160,7 @@ ${escapedMessage}
         });
 
         iframeListener.registerAnswerer("closeUIWebsite", (websiteId) => {
-            return uiWebsiteManager.close(websiteId);
+            return this.uiWebsiteManager.close(websiteId);
         });
 
         iframeListener.registerAnswerer("getMapData", () => {
@@ -2557,7 +2560,7 @@ ${escapedMessage}
         }
 
         iframeListener.cleanup();
-        uiWebsiteManager.closeAll();
+        this.uiWebsiteManager.closeAll();
         followUsersStore.stopFollowing();
 
         audioManagerFileStore.unloadAudio();

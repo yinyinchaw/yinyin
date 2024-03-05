@@ -35,7 +35,7 @@
     "svelte-check": "^2.9.2",
     "svelte-feather-icons": "^4.0.0",
     "svelte-preprocess": "^4.10.7",
-    "tailwindcss": "^3.0.23",
+    "tailwindcss": "^3.4.1",
     "tsconfig-paths": "^3.14.1",
     "tsx": "^4.7.0",
     "typescript": "^4.7.2",
@@ -43,7 +43,6 @@
     "vite-plugin-rewrite-all": "^1.0.1"
   },
   "dependencies": {
-    "@16bits/nes.css": "^2.3.2",
     "@anatine/zod-openapi": "^1.10.0",
     "@fontsource/press-start-2p": "^4.3.0",
     "@fontsource/roboto": "^4.5.8",

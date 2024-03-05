@@ -8,7 +8,6 @@
     import { myCameraStore, proximityMeetingStore } from "../../../Stores/MyMediaStore";
     import MyCamera from "../../MyCamera.svelte";
     import { myJitsiCameraStore, streamableCollectionStore } from "../../../Stores/StreamableCollectionStore";
-    import { liveStreamingEnabledStore } from "../../../Stores/MegaphoneStore";
     import Loading from "../../Video/Loading.svelte";
     import { jitsiLoadingStore } from "../../../Streaming/BroadcastService";
 
@@ -53,10 +52,10 @@
     });
 </script>
 
-<div id="presentation-layout" bind:this={layoutDom} class:full-medias={displayFullMedias}>
+<div id="presentation-layout" bind:this={layoutDom} class:full-medias={displayFullMedias} class="flex flex-col">
     {#if displayFullMedias}
         {#if $streamableCollectionStore.size > 0 || $myCameraStore}
-            <div id="full-medias" class="tw-z-[300] tw-relative tw-mx-auto tw-top-8 tw-h-1/3 tw-overflow-y-auto">
+            <div id="full-medias" class="z-[300] relative mx-auto top-8 h-1/2 overflow-y-auto h-full">
                 {#if $jitsiLoadingStore}
                     <Loading />
                 {/if}
@@ -72,7 +71,24 @@
             </div>
         {/if}
     {:else}
-        <div id="embed-left-block" class:highlighted-cowebsite={$highlightedEmbedScreen != undefined}>
+        {#if $streamableCollectionStore.size > 0 || $myCameraStore}
+            <div class="grid gap-x-4 grid-flow-col auto-cols-auto">
+                {#if $jitsiLoadingStore}
+                    <Loading />
+                {/if}
+                {#if $streamableCollectionStore.size > 0}
+                    <CamerasContainer highlightedEmbedScreen={$highlightedEmbedScreen} />
+                {/if}
+                {#if $myCameraStore}
+                    <!-- && !$megaphoneEnabledStore TODO HUGO -->
+                    <MyCamera />
+                {/if}
+                {#if $myJitsiCameraStore}
+                    <MediaBox streamable={$myJitsiCameraStore} isClickable={false} />
+                {/if}
+            </div>
+        {/if}
+        <div id="embed-left-block" class=" {$highlightedEmbedScreen ? 'block' : 'hidden'}">
             <div id="main-embed-screen">
                 {#if $highlightedEmbedScreen}
                     {#if $highlightedEmbedScreen.type === "streamable"}
@@ -85,7 +101,7 @@
                         {/key}
                     {:else if $highlightedEmbedScreen.type === "cowebsite"}
                         {#key $highlightedEmbedScreen.embed.getId()}
-                            <div class="highlighted-cowebsite-container nes-container is-rounded screen-blocker">
+                            <div class="highlighted-cowebsite-container">
                                 <div
                                     id={"cowebsite-slot-" + $highlightedEmbedScreen.embed.getId()}
                                     class="highlighted-cowebsite"
@@ -107,10 +123,11 @@
                 {/if}
             </div>
         </div>
+        <!-- TODO HUGO Commented Why ?
         {#if $streamableCollectionStore.size > 0 || $myCameraStore}
             <div
-                class="tw-flex tw-flex-col tw-relative tw-self-end tw-z-[300] tw-bottom-6 md:tw-bottom-4 tw-max-w-[25%] 2xl:tw-max-w-[420px] tw-w-full tw-max-h-full"
-                class:tw-w-[10%]={$highlightedEmbedScreen != undefined}
+                class="relative self-end z-[300] bottom-6 md:bottom-4 max-w-[25%] w-full"
+                class:w-[10%]={$highlightedEmbedScreen != undefined}
             >
                 {#if $jitsiLoadingStore}
                     <Loading />
@@ -126,6 +143,7 @@
                 {/if}
             </div>
         {/if}
+        -->
     {/if}
 </div>
 
@@ -133,30 +151,18 @@
     @import "../../../style/breakpoints.scss";
 
     #presentation-layout {
-        height: 100%;
-        width: 100%;
-        display: flex;
-
-        #full-medias {
+        &.full-medias {
             overflow-y: auto;
             overflow-x: hidden;
-            width: 43%;
         }
     }
 
     #embed-left-block {
-        display: flex;
         flex-direction: column;
         flex: 0 0 75%;
         height: 100%;
-        width: 90%;
+        width: 75%;
         padding-bottom: 4rem;
-        &.highlighted-cowebsite {
-            min-width: 90%;
-        }
-        @media (min-width: 1536px) {
-            min-width: calc(100% - 420px);
-        }
     }
 
     #main-embed-screen {

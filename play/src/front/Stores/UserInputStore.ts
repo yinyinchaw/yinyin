@@ -1,6 +1,5 @@
 import { derived, writable } from "svelte/store";
-import { menuInputFocusStore } from "./MenuStore";
-import { chatInputFocusStore } from "./ChatStore";
+import { menuInputFocusStore } from "./MenuInputFocusStore";
 import { showReportScreenStore, userReportEmpty } from "./ShowReportScreenStore";
 
 export const inputFormFocusStore = writable(false);
@@ -27,13 +26,8 @@ document.addEventListener("focusout", (event) => {
 
 //derived from the focus on Menu, ConsoleGlobal, Chat and ...
 export const enableUserInputsStore = derived(
-    [menuInputFocusStore, chatInputFocusStore, showReportScreenStore, inputFormFocusStore],
-    ([$menuInputFocusStore, $chatInputFocusStore, $showReportScreenStore, $inputFormFocusStore]) => {
-        return (
-            !$menuInputFocusStore &&
-            !$chatInputFocusStore &&
-            !($showReportScreenStore !== userReportEmpty) &&
-            !$inputFormFocusStore
-        );
+    [menuInputFocusStore, showReportScreenStore, inputFormFocusStore],
+    ([$menuInputFocusStore, $showReportScreenStore, $inputFormFocusStore]) => {
+        return !$menuInputFocusStore && !($showReportScreenStore !== userReportEmpty) && !$inputFormFocusStore;
     }
 );

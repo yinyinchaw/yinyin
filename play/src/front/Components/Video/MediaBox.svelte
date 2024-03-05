@@ -44,29 +44,25 @@
 {#if streamable instanceof VideoPeer}
     {#if $constraintStore || $statusStore === "error" || $statusStore === "connecting"}
         <div
-            class="media-container media-box-shape-color tw-pointer-events-auto screen-blocker tw-rounded-2xl"
+            class="transition-all relative h-full aspect-video w-fit"
             class:hightlighted={isHightlighted}
-            class:tw-mr-6={isHightlighted && videoEnabled}
-            class:tw-flex={!isHightlighted}
-            class:media-box-camera-on-size={!isHightlighted && videoEnabled}
-            class:media-box-camera-off-size={!isHightlighted && !videoEnabled}
-            class:tw-max-w-sm={isHightlighted && !videoEnabled}
-            class:tw-mx-auto={isHightlighted && !videoEnabled}
-            class:tw-m-auto={!isHightlighted && !videoEnabled}
-            class:tw-h-12={!isHightlighted && !videoEnabled}
+            class:mr-6={isHightlighted && videoEnabled}
+            class:max-w-sm={isHightlighted && !videoEnabled}
+            class:mx-auto={isHightlighted && !videoEnabled}
+            class:m-auto={!isHightlighted && !videoEnabled}
+            class:aspect-video={!isHightlighted && !videoEnabled}
             class:clickable={isClickable}
             class:mozaic-duo={mozaicDuo}
             class:mozaic-full-width={mozaicSolo}
             class:mozaic-quarter={mozaicQuarter}
+            transition:fly={{ y: 50, duration: 150 }}
         >
-            <div class="tw-w-full tw-h-full tw-flex screen-blocker tw-items-center" class:tw-mx-auto={!isHightlighted}>
-                <VideoMediaBox peer={streamable} clickable={isClickable} {isHightlighted} />
-            </div>
+            <VideoMediaBox peer={streamable} clickable={isClickable} />
         </div>
     {/if}
 {:else if streamable instanceof ScreenSharingPeer}
     <div
-        class="media-container {isHightlighted ? 'hightlighted' : 'tw-flex media-box-camera-on-size'}
+        class="media-container {isHightlighted ? 'hightlighted mr-6' : 'flex'}
      media-box-shape-color
 "
         class:clickable={isClickable}
@@ -74,42 +70,45 @@
         class:mozaic-full-width={mozaicSolo}
         class:mozaic-quarter={mozaicQuarter}
     >
-        <div class="{isHightlighted ? '' : 'tw-mx-auto'} tw-w-full tw-h-full tw-flex screen-blocker">
+        <div class="{isHightlighted ? 'h-[41vw] mr-6' : 'mx-auto'} w-full h-full flex screen-blocker">
             <ScreenSharingMediaBox peer={streamable} clickable={isClickable} />
         </div>
     </div>
 {:else if streamable instanceof JitsiTrackStreamWrapper}
     <div
-        class="media-container media-box-shape-color tw-pointer-events-auto screen-blocker tw-flex tw-items-center"
+        class="media-container media-box-shape-color pointer-events-auto screen-blocker"
         class:hightlighted={isHightlighted}
-        class:tw-mr-6={isHightlighted && streamable.getVideoTrack()}
+        class:mr-6={isHightlighted && streamable.getVideoTrack()}
+        class:flex={!isHightlighted}
         class:media-box-camera-on-size={!isHightlighted && streamable.getVideoTrack()}
         class:media-box-camera-off-size={!isHightlighted && !streamable.getVideoTrack()}
-        class:tw-max-w-sm={isHightlighted && !streamable.getVideoTrack()}
-        class:tw-mx-auto={isHightlighted && !streamable.getVideoTrack()}
-        class:tw-m-auto={!isHightlighted && !streamable.getVideoTrack()}
-        class:tw-h-12={!isHightlighted && !streamable.getVideoTrack()}
+        class:max-w-sm={isHightlighted && !streamable.getVideoTrack()}
+        class:mx-auto={isHightlighted && !streamable.getVideoTrack()}
+        class:m-auto={!isHightlighted && !streamable.getVideoTrack()}
+        class:h-12={!isHightlighted && !streamable.getVideoTrack()}
         class:clickable={isClickable}
         class:mozaic-full-width={mozaicSolo}
         class:mozaic-duo={mozaicDuo}
         class:mozaic-quarter={mozaicQuarter}
-        transition:fly={{ x: 200, duration: 250 }}
     >
-        <div class="tw-w-full tw-h-full tw-flex screen-blocker" class:tw-mx-auto={!isHightlighted}>
-            <JitsiMediaBox peer={streamable} clickable={isClickable} {isHightlighted} />
+        <div
+            class="w-full flex screen-blocker"
+            class:mr-6={isHightlighted}
+            class:mx-auto={!isHightlighted}
+            class:h-[32vw]={isHightlighted && videoEnabled}
+        >
+            <JitsiMediaBox peer={streamable} clickable={isClickable} />
         </div>
     </div>
 {:else}
     <div
-        class="media-container {isHightlighted ? 'hightlighted' : 'tw-flex media-box-camera-on-size'}
-     media-box-shape-color
-"
+        class="media-container  {isHightlighted ? 'hightlighted mr-6' : 'flex h-full aspect-ratio'}"
         class:clickable={isClickable}
         class:mozaic-full-width={mozaicSolo}
         class:mozaic-duo={mozaicDuo}
         class:mozaic-quarter={mozaicQuarter}
     >
-        <div class="{isHightlighted ? '' : 'tw-mx-auto'}   tw-w-full tw-h-full tw-flex screen-blocker">
+        <div class="{isHightlighted ? 'h-[41vw] mr-6' : 'mx-auto'}   w-full h-full flex screen-blocker">
             <LocalStreamMediaBox peer={streamable} clickable={isClickable} cssClass="" />
         </div>
     </div>
@@ -121,9 +120,6 @@
     //Classes factorizing tailwind's ones are defined in video-ui.scss
 
     .media-container {
-        transition: margin-left 0.2s, margin-right 0.2s, margin-bottom 0.2s, margin-top 0.2s, max-height 0.2s,
-            max-width 0.2s;
-
         &.clickable {
             cursor: pointer;
         }

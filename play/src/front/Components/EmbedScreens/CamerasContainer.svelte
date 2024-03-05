@@ -9,13 +9,8 @@
     $: clickable = !full;
 </script>
 
-<aside
-    class="cameras-container tw-overflow-visible"
-    style="overflow-y: auto;"
-    class:full
-    in:fly|local={{ x: 200, duration: 100 }}
->
-    <div class="other-cameras tw-overflow-visible tw-flex tw-flex-col tw-content-center tw-gap-2">
+<aside class:full in:fly|local={{ x: 200, duration: 100 }}>
+    <div class="other-cameras overflow-visible flex flex-col content-center gap-2">
         {#each [...$streamableCollectionStore] as [uniqueId, peer] (uniqueId)}
             {#if !highlightedEmbedScreen || highlightedEmbedScreen.type !== "streamable" || (highlightedEmbedScreen.type === "streamable" && highlightedEmbedScreen.embed !== peer)}
                 {#key uniqueId}
@@ -27,12 +22,4 @@
 </aside>
 
 <style lang="scss">
-    .cameras-container {
-        &:first-child {
-            margin-top: 2%;
-        }
-        &.full {
-            flex: 0 0 100%;
-        }
-    }
 </style>

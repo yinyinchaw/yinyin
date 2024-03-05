@@ -12,7 +12,7 @@
     import jitsiIcon from "../images/jitsi.png";
     import meetingIcon from "../images/meeting.svg";
     import { analyticsClient } from "../../Administration/AnalyticsClient";
-    import { LL } from "../../../i18n/i18n-svelte";
+    import loaderImg from "../images/loader.svg";
 
     export let index: number;
     export let coWebsite: CoWebsite;
@@ -101,133 +101,61 @@
 
 <div
     id={"cowebsite-thumbnail-" + index}
-    class="cowebsite-thumbnail nes-pointer"
+    class="cowebsite-thumbnail flex items-center mr-4 p-2 rounded {isMain || isHighlight
+        ? 'bg-white text-contrast'
+        : 'bg-contrast/80 text-white'}"
     class:asleep={$state === "asleep"}
     class:loading={$state === "loading"}
     class:ready={$state === "ready"}
-    class:displayed={isMain || isHighlight}
     class:vertical
-    on:click={() => analyticsClient.stackOpenCloseMultiIframe()}
-    on:click={onClick}
 >
     <img
-        class="cowebsite-icon noselect clickable tw-bg-dark-blue/50 tw-p-0 tw-border-medium-purple tw-border-solid tw-rounded tw-pointer-events-auto hover:tw-border-light-purple hover:tw-bg-dark-blue/75 hover:tw-scale-105 tw-transition-all"
+        class="cowebsite-icon noselect clickable p-0 border-medium-purple border-solid rounded pointer-events-auto transition-all mr-4"
         class:hide={!iconLoaded}
         class:meeting={isMeeting}
         bind:this={icon}
         on:dragstart|preventDefault={noDrag}
         alt=""
     />
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:xlink="http://www.w3.org/1999/xlink"
-        class="cowebsite-icon"
+    <div
         class:hide={iconLoaded}
-        style="margin: auto; background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%; shape-rendering: auto;"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid"
-    >
-        <rect x="19" y="19" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="40" y="19" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.125s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="61" y="19" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.25s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="19" y="40" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.875s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="61" y="40" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.375s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="19" y="61" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.75s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="40" y="61" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.625s"
-                calcMode="discrete"
-            />
-        </rect>
-        <rect x="61" y="61" width="20" height="20" fill="#14304c">
-            <animate
-                attributeName="fill"
-                values="#365dff;#14304c;#14304c"
-                keyTimes="0;0.125;1"
-                dur="1s"
-                repeatCount="indefinite"
-                begin="0.5s"
-                calcMode="discrete"
-            />
-        </rect>
-    </svg>
+        class="h-10 w-10 aspect-ratio bg-contrast"
+        style="background-image: url({loaderImg})"
+    />
+    <div class="pr-2">
+        <div class="bold text-lg">{cowebsiteName}</div>
+        <div class="italic text-xs opacity-50 -mt-1">{cowebsiteName}</div>
+    </div>
+    <div on:click={() => analyticsClient.stackOpenCloseMultiIframe()} on:click={onClick}>
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clip-path="url(#clip0_1820_4223)">
+                <path
+                    d="M16.5 5.5L5.5 16.5M5.5 5.5L16.5 16.5"
+                    class="{isMain || isHighlight ? 'stroke-contrast' : 'stroke-white'} transition-all"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </g>
+            <defs>
+                <clipPath id="clip0_1820_4223">
+                    <rect width="22" height="22" fill="white" />
+                </clipPath>
+            </defs>
+        </svg>
+    </div>
 
-    <!-- TODO use trigger message property -->
-    <div class="cowebsite-hover tw-opacity-1 md:tw-opacity-0" style="width: max-content;">
+    <!--
+    <div class="cowebsite-hover opacity-1 md:opacity-0" style="width: max-content;">
         <p>{$LL.cowebsite.open()} / {$LL.cowebsite.close()} <b>{cowebsiteName}</b></p>
     </div>
+    -->
 </div>
 
 <style lang="scss">
     .cowebsite-thumbnail {
         cursor: pointer;
         position: relative;
-        margin: 12px;
         margin-top: auto;
         margin-bottom: auto;
 

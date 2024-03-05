@@ -3,10 +3,8 @@ import { derived, get, readable, writable } from "svelte/store";
 import deepEqual from "fast-deep-equal";
 import { AvailabilityStatus } from "@workadventure/messages";
 import { localUserStore } from "../Connection/LocalUserStore";
-import { HtmlUtils } from "../WebRtc/HtmlUtils";
 import { isIOS } from "../WebRtc/DeviceUtils";
 import { ObtainedMediaStreamConstraints } from "../WebRtc/P2PMessages/ConstraintMessage";
-import { isMediaBreakpointUp } from "../Utils/BreakpointsUtils";
 import { SoundMeter } from "../Phaser/Components/SoundMeter";
 import { userMovingStore } from "./GameStore";
 import { BrowserTooOldError } from "./Errors/BrowserTooOldError";
@@ -180,36 +178,27 @@ const deviceChanged10SecondsAgoStore = readable(false, function start(set) {
  * A store containing whether the mouse is getting close the bottom right corner.
  */
 const mouseInCameraTriggerArea = readable(false, function start(set) {
-    let lastInTriggerArea = false;
+    console.info("JE VIENS DE PASSER SUR LA PARTIE DROITE");
+    /*let lastInTriggerArea = false;
     const gameDiv = HtmlUtils.getElementByIdOrFail<HTMLDivElement>("game");
 
-    const detectInBottomRight = (event: MouseEvent) => {
-        const isSmallScreen = isMediaBreakpointUp("md");
+    const detectInTopCenter = (event: MouseEvent) => {
         const rect = gameDiv.getBoundingClientRect();
-
-        if (!isSmallScreen) {
-            const inBottomRight =
-                event.x - rect.left > (rect.width * 3) / 4 && event.y - rect.top > (rect.height * 3) / 4; //Mouse's x is further than 3/4 of the width and lower than 3/4 starting from top
-            if (inBottomRight !== lastInTriggerArea) {
-                lastInTriggerArea = inBottomRight;
-                set(inBottomRight);
-            }
-        } else {
-            const inTopCenter =
-                event.x - rect.left > rect.width / 4 &&
-                event.x + rect.left < (rect.width * 3) / 4 &&
-                event.y - rect.top < rect.height / 4;
-            if (inTopCenter !== lastInTriggerArea) {
-                lastInTriggerArea = inTopCenter;
-                set(inTopCenter);
-            }
+        const inTopCenter =
+            event.x - rect.left > rect.width / 4 &&
+            event.x + rect.left < (rect.width * 3) / 4 &&
+            event.y - rect.top < rect.height / 3;
+        if (inTopCenter !== lastInTriggerArea) {
+            lastInTriggerArea = inTopCenter;
+            set(inTopCenter);
         }
-    };
 
-    document.addEventListener("mousemove", detectInBottomRight);
+    };*/
+
+    //document.addEventListener("mousemove", detectInTopCenter);
 
     return function stop() {
-        document.removeEventListener("mousemove", detectInBottomRight);
+        //document.removeEventListener("mousemove", detectInTopCenter);
     };
 });
 

@@ -1,18 +1,7 @@
 <script lang="ts">
-    import {
-        SendIcon,
-        SmileIcon,
-        PaperclipIcon,
-        LoaderIcon,
-        Trash2Icon,
-        CheckIcon,
-        AlertCircleIcon,
-        XCircleIcon,
-        ArrowRightCircleIcon,
-    } from "svelte-feather-icons";
+    import { PaperclipIcon, LoaderIcon, Trash2Icon, AlertCircleIcon, ArrowRightCircleIcon } from "svelte-feather-icons";
     import { createEventDispatcher, onMount } from "svelte";
     import { EmojiButton } from "@joeattardi/emoji-button";
-    import { UserData } from "@workadventure/messages";
     import { ChatState } from "stanza/Constants";
     import { get, writable } from "svelte/store";
     import {
@@ -36,13 +25,11 @@
         mentionsUserStore,
         enableChatUpload,
     } from "../Stores/ChatStore";
-    import { userStore } from "../Stores/LocalUserStore";
     import { mucRoomsStore } from "../Stores/MucRoomsStore";
     import { FileExt, fileMessageManager, UploadedFile, uploadingState } from "../Services/FileMessageManager";
     import crown from "../../public/static/svg/icone-premium-crown.svg";
     import { iframeListener } from "../IframeListener";
     import { chatConnectionManager } from "../Connection/ChatConnectionManager";
-    import File from "./Content/File.svelte";
     import ApplicationPicker from "./Content/ApplicationPicker.svelte";
 
     export let mucRoom: MucRoom;
@@ -154,27 +141,6 @@
 
     function isMe(name: string) {
         return name === mucRoom.playerName;
-    }
-
-    function findUserInDefault(name: string): User | UserData | undefined {
-        if (isMe(name)) {
-            return $userStore;
-        }
-        const userData = $presenceStore.map((user) => get(user)).find((user) => user.name === name);
-        let user = undefined;
-        if (userData) {
-            user = userData;
-        }
-        return user;
-    }
-
-    function getColor(name: string) {
-        const user = findUserInDefault(name);
-        if (user) {
-            return user.color;
-        } else {
-            return defaultColor;
-        }
     }
 
     function sendReplyMessage(message: string) {
@@ -403,12 +369,11 @@
         dispatch("formHeight", messageForm.clientHeight);
         picker = new EmojiButton({
             styleProperties: {
-                "--font": "Press Start 2P",
-                "--background-color": "#23222c",
+                "--font": "Roboto Condensed",
                 "--text-color": "#ffffff",
                 "--secondary-text-color": "#ffffff",
                 "--category-button-color": "#ffffff",
-                "--category-button-active-color": "#56eaff",
+                "--category-button-active-color": "rgb(103, 233, 123)",
             },
             position: "bottom",
             emojisPerRow: 5,
@@ -511,38 +476,98 @@
     /* eslint-disable svelte/require-each-key */
 </script>
 
-<div class="wa-message-form" bind:this={messageForm}>
+<div class="wa-message-form fixed bottom-0 w-full z-20" bind:this={messageForm}>
     {#if $selectedMessageToReply}
-        <div class="replyMessage" on:click={() => selectedMessageToReply.set(null)}>
-            <div
-                style={`border-bottom-color:${getColor($selectedMessageToReply.name)}`}
-                class={`tw-mr-9 tw-flex tw-items-end tw-justify-between tw-mx-2 tw-border-0 tw-border-b tw-border-solid tw-text-light-purple-alt tw-text-xxs tw-pb-0.5 ${
-                    isMe($selectedMessageToReply.name) ? "tw-flex-row-reverse" : "tw-flex-row"
-                }`}
-            >
-                <span class={`tw-text-lighter-purple ${isMe($selectedMessageToReply.name) ? "tw-ml-2" : "tw-mr-2"}`}
-                    >{#if isMe($selectedMessageToReply.name)}{$LL.me()}{:else}{$selectedMessageToReply.name}{/if}</span
-                >
-                <span class="tw-text-xxxs"
-                    >{$selectedMessageToReply.time.toLocaleTimeString($locale, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}</span
-                >
-            </div>
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between">
-                <div class="tw-w-11/12 message tw-rounded-lg tw-bg-dark tw-text-xs tw-px-3 tw-py-2 tw-text-left">
-                    <p class="tw-mb-0 tw-whitespace-pre-line tw-break-words">
-                        {$selectedMessageToReply.body}
-                    </p>
+        <div class="replyMessage w-full bg-secondary relative" on:click={() => selectedMessageToReply.set(null)}>
+            <div class="flex flex-wrap items-center justify-between">
+                <div class="grow message text-xs px-4 py-2 text-left w-full pr-12">
+                    <div class="flex items-end justify-between text-xxs">
+                        <span class="text-white opacity-50">
+                            {#if isMe($selectedMessageToReply.name)}{$LL.me()}{:else}{$selectedMessageToReply.name}{/if}
+                            -
+                            {$selectedMessageToReply.time.toLocaleTimeString($locale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </span>
+                    </div>
+                    <div class="mb-0 whitespace-pre-line break-words flex">
+                        <div class="mr-1 opacity-50">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="icon icon-tabler icon-tabler-corner-down-right"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="#ffffff"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M6 6v6a3 3 0 0 0 3 3h10l-4 -4m0 8l4 -4" />
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            {$selectedMessageToReply.body}
+                        </div>
+                    </div>
                     {#if $selectedMessageToReply && $selectedMessageToReply.links && $selectedMessageToReply.links.length > 0}
                         {#each $selectedMessageToReply.links as link (link.url)}
-                            <File url={link.url} name={link.description} />
+                            <div class="flex pt-2">
+                                <div class="px-1 aspect-square h-6 w-6 opacity-30">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="icon icon-tabler icon-tabler-paperclip s-58EZrIzJfOBz"
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="1.5"
+                                        stroke="#ffffff"
+                                        fill="none"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" class="s-58EZrIzJfOBz" />
+                                        <path
+                                            d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"
+                                            class="s-58EZrIzJfOBz"
+                                        />
+                                    </svg>
+                                </div>
+                                <a
+                                    href={link.url}
+                                    target="_blank"
+                                    class="no-underline text-white ml-3 max-w-full text-ellipsis overflow-hidden whitespace-nowrap hover:underline"
+                                >
+                                    {link.description}
+                                </a>
+                            </div>
                         {/each}
                     {/if}
                 </div>
-                <div class="close">
-                    <XCircleIcon size="17" />
+                <div
+                    class="close absolute right-0 top-0 bottom-0 m-auto h-full w-9 hover:bg-white/10 text-center flex items-center justify-center"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="mt-1 icon icon-tabler icon-tabler-x s-58EZrIzJfOBz"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="#ffffff"
+                        fill="none"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" class="s-58EZrIzJfOBz" /><path
+                            d="M18 6l-12 12"
+                            class="s-58EZrIzJfOBz"
+                        />
+                        <path d="M6 6l12 12" class="s-58EZrIzJfOBz" />
+                    </svg>
                 </div>
             </div>
         </div>
@@ -568,11 +593,11 @@
 
     {#each [...$applicationsSelected] as app (app.name)}
         <div
-            class="tw-flex tw-flex-column tw-items-center tw-justify-center tw-mx-12 tw-mb-2 tw-p-3 tw-flex tw-flex-wrap tw-rounded-xl tw-text-xxs tw-bottom-12"
+            class="flex flex-column items-center justify-center mx-12 mb-2 p-3 flex flex-wrap rounded-xl text-xxs bottom-12"
             style="backdrop-filter: blur(30px);border: solid 1px rgb(27 27 41);"
         >
-            <div class="tw-flex tw-flex-row tw-justify-between tw-items-center tw-m-1 tw-w-full">
-                <label for="app" class="tw-m-0">
+            <div class="flex flex-row justify-between items-center m-1 w-full">
+                <label for="app" class="m-0">
                     <img src={app.icon} alt={`App ${app.name} started in the chat`} width="20px" />
                     {app.description}
                 </label>
@@ -580,7 +605,7 @@
                     on:click|preventDefault|stopPropagation={() => {
                         deleteApplication(app);
                     }}
-                    class="delete tw-pr-0 tw-mr-0"
+                    class="delete pr-0 mr-0"
                 >
                     <Trash2Icon size="14" />
                 </button>
@@ -589,16 +614,16 @@
                 id="app"
                 type="text"
                 placeholder={app.example}
-                class="tw-bg-transparent tw-text-light-blue tw-w-full tw-py-1 tw-px-2 tw-mb-0 tw-text-sm tw-border-white"
+                class="bg-transparent text-light-blue w-full py-1 px-2 mb-0 text-sm border-white"
                 bind:value={app.link}
                 on:keypress={handlerKeyDownAppInput}
                 on:blur={() => checkWebsiteProperty(app)}
             />
             {#if app.image}
-                <img class="tw-m-4" src={app.image} alt={`App ${app.name} preview`} width="100px" />
+                <img class="m-4" src={app.image} alt={`App ${app.name} preview`} width="100px" />
             {/if}
             {#if app.error}
-                <p class="tw-text-pop-red tw-text-xs tw-px-2 tw-mt-2 tw-my-0">{app.error}</p>
+                <p class="text-pop-red text-xs px-2 mt-2 my-0">{app.error}</p>
             {/if}
         </div>
     {/each}
@@ -608,21 +633,18 @@
     {/if}
 
     <form on:submit|preventDefault={sendMessage}>
-        <div class="tw-w-full tw-p-2">
+        <div class="w-full  ">
             {#each [...$filesUploadStore.values()] as fileUploaded}
                 <div
-                    class="upload-file tw-flex tw-flex-wrap tw-rounded-3xl tw-text-xxs tw-justify-between tw-items-center tw-mx-6 tw-px-3 tw-mb-1"
-                    style="backdrop-filter: blur(30px);border: solid 1px rgb(27 27 41);"
+                    class="upload-file flex flex-wrap text-xs justify-between items-center px-4 py-2 relative bg-secondary"
                 >
                     {#if fileUploaded.errorMessage !== undefined}
                         <div
-                            class={`error-hover tw-flex tw-flex-wrap tw-bg-dark-blue/95 tw-rounded-3xl tw-text-xxs tw-justify-between tw-items-center tw-px-4 tw-py-2 ${
-                                fileUploaded.errorCode === 423 && $me && $me.isAdmin
-                                    ? "tw-text-warning"
-                                    : "tw-text-pop-red"
-                            } tw-absolute tw-w-full`}
+                            class={`error-hover flex flex-wrap bg-dark-blue/95 rounded-3xl text-xxs justify-between items-center px-4 py-2 ${
+                                fileUploaded.errorCode === 423 && $me && $me.isAdmin ? "text-warning" : "text-pop-red"
+                            } absolute w-full`}
                         >
-                            <p class="tw-m-0">
+                            <p class="m-0">
                                 {#if fileUploaded.errorMessage === "file-too-big"}
                                     {$LL.file.tooBig({
                                         fileName: fileUploaded.name,
@@ -636,7 +658,7 @@
                             </p>
                             {#if fileUploaded.errorMessage === "not-logged"}
                                 <div
-                                    class="tw-text-light-blue tw-cursor-pointer"
+                                    class="text-light-blue cursor-pointer"
                                     on:click|preventDefault|stopPropagation={() => iframeListener.sendLogin()}
                                 >
                                     <ArrowRightCircleIcon size="14" />
@@ -644,10 +666,10 @@
                             {/if}
                             {#if fileUploaded.errorCode === 423 && $me && $me.isAdmin}
                                 <button
-                                    class="tw-text-warning tw-font-bold tw-underline tw-m-auto"
+                                    class="text-warning font-bold underline m-auto"
                                     on:click={() => iframeListener.sendRedirectPricing()}
                                 >
-                                    <img alt="Crown logo" src={crown} class="tw-mr-1" />
+                                    <img alt="Crown logo" src={crown} class="mr-1" />
                                     {$LL.upgrade()}
                                 </button>
                             {/if}
@@ -655,105 +677,194 @@
                     {/if}
                     <div
                         style="max-width: 92%; display: flex; flex-wrap: nowrap;"
-                        class="tw-flex tw-flex-wrap tw-text-xxs tw-items-center"
+                        class="flex flex-wrap text-xxs items-center"
                     >
                         {#if fileUploaded.uploadState === uploadingState.finish}
-                            <CheckIcon size="14" class="tw-text-pop-green" />
+                            <div class="px-1 aspect-square h-6 w-6 opacity-30">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="icon icon-tabler icon-tabler-paperclip s-58EZrIzJfOBz"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.5"
+                                    stroke="#ffffff"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" class="s-58EZrIzJfOBz" />
+                                    <path
+                                        d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"
+                                        class="s-58EZrIzJfOBz"
+                                    />
+                                </svg>
+                            </div>
                         {:else if fileUploaded.uploadState === uploadingState.error}
                             <div
-                                class="alert-upload tw-cursor-pointer"
+                                class="alert-upload cursor-pointer"
                                 on:click|preventDefault|stopPropagation={() => resend()}
                             >
                                 <AlertCircleIcon size="14" />
                             </div>
                         {:else}
-                            <LoaderIcon size="14" class="tw-animate-spin" />
+                            <LoaderIcon size="14" class="animate-spin" />
                         {/if}
-                        <span class="tw-ml-1 tw-max-w-full tw-text-ellipsis tw-overflow-hidden tw-whitespace-nowrap">
+                        <span class="ml-3 max-w-full text-ellipsis overflow-hidden whitespace-nowrap">
                             {fileUploaded.name}
                         </span>
+                        <button
+                            on:click|preventDefault|stopPropagation={() => {
+                                handlerDeleteUploadedFile(fileUploaded);
+                            }}
+                            class="delete p-0 m-0 absolute right-0 top-0 h-full w-9 hover:bg-white/10 text-center"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="mt-1 icon icon-tabler icon-tabler-x"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="#ffffff"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M18 6l-12 12" />
+                                <path d="M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        on:click|preventDefault|stopPropagation={() => {
-                            handlerDeleteUploadedFile(fileUploaded);
-                        }}
-                        class="delete tw-pr-0 tw-mr-0"
-                    >
-                        <Trash2Icon size="14" />
-                    </button>
                 </div>
             {/each}
             {#if informationMessage}
                 <div
-                    class="tw-flex tw-flex-wrap tw-bg-dark-blue/95 tw-rounded-3xl tw-py-2 tw-text-xs tw-items-center tw-px-4 tw-text-warning tw-w-full tw-mb-1 tw-cursor-pointer"
+                    class="flex flex-wrap bg-dark-blue/95 rounded-3xl py-2 text-xs items-center px-4 text-warning w-full mb-1 cursor-pointer"
                     on:click|preventDefault|stopPropagation={() => (informationMessage = null)}
                 >
-                    <div class="tw-text-warning tw-mr-1.5">
+                    <div class="text-warning mr-1.5">
                         <AlertCircleIcon size="16" />
                     </div>
-                    <p class="tw-m-0">
+                    <p class="m-0">
                         {informationMessage}
                     </p>
                 </div>
             {/if}
 
-            <div class="tw-w-full tw-px-2 tw-pb-2 tw-flex tw-flex-row tw-justify-center tw-items-center">
-                <div class="actions tw-px-2 tw-py-2">
-                    <div class="tw-flex tw-items-center tw-space-x-1">
+            <div
+                class="w-full px-2 py-2 flex flex-row justify-center items-center bg-contrast/80 border-x-0 border-b-0 border-t border-solid border-white/30 backdrop-blur"
+            >
+                <div class="actions px-2 py-2">
+                    <div class="flex items-center space-x-1">
                         <button
                             id="application"
-                            class="tw-bg-transparent tw-p-0 tw-m-0 tw-inline-flex tw-justify-center tw-items-center"
+                            class="bg-transparent p-0 m-0 inline-flex justify-center items-center"
                             on:click|preventDefault|stopPropagation={toggleApplicationMenu}
                             disabled={$applications.size === 0}
                         >
-                            <img
-                                src={`./static/images/applications/app${applicationMenuIsOpenned ? "On" : "Off"}.png`}
-                                alt="send"
-                                width="17px"
-                            />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="icon icon-tabler icon-tabler-apps"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="#ffffff"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path
+                                    d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"
+                                />
+                                <path
+                                    d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"
+                                />
+                                <path
+                                    d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"
+                                />
+                                <path d="M14 7l6 0" />
+                                <path d="M17 4l0 6" />
+                            </svg>
                         </button>
                     </div>
                 </div>
-                <div
-                    contenteditable="true"
-                    bind:this={textarea}
-                    bind:textContent={newMessageText}
-                    bind:innerHTML={htmlMessageText}
-                    data-placeholder={$LL.enterText()}
-                    on:input={onInput}
-                    on:keydown={onKeyDown}
-                    on:keypress={onKeyPress}
-                />
-                <div class="actions tw-px-2 tw-py-2">
-                    <div class="tw-flex tw-items-center tw-space-x-1">
-                        <button
-                            class={`tw-bg-transparent tw-p-0 tw-m-0 tw-inline-flex tw-justify-center tw-items-center ${
-                                emojiOpened ? "tw-text-light-blue" : ""
-                            }`}
-                            on:click|preventDefault|stopPropagation={openEmoji}
+                <div class="relative grow">
+                    <div
+                        contenteditable="true"
+                        bind:this={textarea}
+                        bind:textContent={newMessageText}
+                        bind:innerHTML={htmlMessageText}
+                        data-placeholder={$LL.enterText()}
+                        on:input={onInput}
+                        on:keydown={onKeyDown}
+                        on:keypress={onKeyPress}
+                        class="bg-contrast rounded border border-solid border-white/20 px-4 py-2 focus:outline-secondary"
+                    />
+                    <button
+                        class="bg-transparent p-0 m-0 inline-flex justify-center items-center absolute right-2 top-0 bottom-0 m-auto opacity-50 hover:opacity-100 cursor-pointer {emojiOpened
+                            ? 'text-light-blue'
+                            : ''}"
+                        on:click|preventDefault|stopPropagation={openEmoji}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="icon icon-tabler icon-tabler-mood-smile"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="#ffffff"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
                         >
-                            <SmileIcon size="17" />
-                        </button>
-                        {#if $enableChatUpload}
-                            <input
-                                type="file"
-                                id="file"
-                                name="file"
-                                class="tw-hidden"
-                                on:input={handleInputFile}
-                                multiple
-                            />
-                            <label for="file" class="tw-m-0 tw-cursor-pointer"><PaperclipIcon size="17" /></label>
-                        {:else}
-                            <button
-                                id="file"
-                                class={`tw-bg-transparent tw-p-0 tw-m-0 tw-inline-flex tw-justify-center tw-items-center tw-opacity-50`}
-                                on:click|preventDefault|stopPropagation={() =>
-                                    (informationMessage = $LL.disabledByAdmin())}
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M9 10l.01 0" />
+                            <path d="M15 10l.01 0" />
+                            <path d="M9.5 15a3.5 3.5 0 0 0 5 0" />
+                        </svg>
+                    </button>
+                    {#if $enableChatUpload}
+                        <input type="file" id="file" name="file" class="hidden" on:input={handleInputFile} multiple />
+                        <label
+                            for="file"
+                            class="bg-transparent p-0 m-0 inline-flex justify-center items-center absolute right-10 top-0 bottom-0 m-auto opacity-50 hover:opacity-100 cursor-pointer"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="icon icon-tabler icon-tabler-paperclip"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="#ffffff"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
                             >
-                                <PaperclipIcon size="17" />
-                            </button>
-                        {/if}
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path
+                                    d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"
+                                />
+                            </svg>
+                        </label>
+                    {:else}
+                        <button
+                            id="file"
+                            class={`bg-transparent p-0 m-0 inline-flex justify-center items-center opacity-50`}
+                            on:click|preventDefault|stopPropagation={() => (informationMessage = $LL.disabledByAdmin())}
+                        >
+                            <PaperclipIcon size="17" />
+                        </button>
+                    {/if}
+                </div>
+                <div class="actions px-2 py-2">
+                    <div class="flex items-center space-x-1">
                         <button
                             id="send"
                             type="submit"
@@ -761,22 +872,39 @@
                                 !$hasErrorUploadingFile && !$hasInProgressUploadingFile && !isMessageTooLong
                                     ? "can-send"
                                     : "cant-send"
-                            } tw-bg-transparent tw-p-0 tw-m-0 tw-inline-flex tw-justify-center tw-items-center tw-text-light-blue`}
+                            } bg-transparent p-0 m-0 inline-flex justify-center items-center text-light-blue`}
                             on:mouseover={showErrorMessages}
                             on:focus={showErrorMessages}
                             on:click={sendMessage}
                         >
                             {#if $hasErrorUploadingFile || isMessageTooLong}
-                                <AlertCircleIcon size="17" class="tw-text-pop-red" />
+                                <AlertCircleIcon size="17" class="text-pop-red" />
                             {:else if $hasInProgressUploadingFile}
-                                <LoaderIcon size="17" class="tw-animate-spin" />
+                                <LoaderIcon size="17" class="animate-spin" />
                             {:else}
-                                <SendIcon size="17" />
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="icon icon-tabler icon-tabler-send"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="1.5"
+                                    stroke="#ffffff"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M10 14l11 -11" />
+                                    <path
+                                        d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"
+                                    />
+                                </svg>
                             {/if}
                         </button>
                     </div>
                     {#if isMessageTooLong}
-                        <div class="tw-text-pop-red tw-text-xs tw-font-bold tw-text-right tw-mt-5">
+                        <div class="text-pop-red text-xs font-bold text-right mt-5">
                             {maxCharMessage - newMessageText.length}
                         </div>
                     {/if}
@@ -787,112 +915,4 @@
 </div>
 
 <style lang="scss">
-    .replyMessage {
-        padding: 0 20px;
-        margin: 0;
-        position: relative;
-
-        .close {
-            color: rgb(146 142 187);
-            &:hover {
-                color: rgb(255 71 90);
-            }
-        }
-
-        &::after {
-            //content: "x";
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            color: white;
-            font-size: 12px;
-            position: absolute;
-            top: 0;
-            right: 4px;
-            border: solid 1px white;
-            text-align: center;
-            border-radius: 99%;
-        }
-
-        .message {
-            opacity: 1;
-        }
-
-        &:hover {
-            cursor: pointer;
-            .close {
-                color: rgb(255 71 90);
-            }
-        }
-    }
-
-    .wa-dropdown-menu {
-        margin: 0 0 0 10px;
-        position: relative;
-        width: 94%;
-        max-height: 50vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-
-        .wa-dropdown-item.user-tag {
-            img {
-                height: 22px;
-                width: 22px;
-                object-fit: contain;
-                margin-right: 6px;
-            }
-            &:active,
-            &:focus {
-                --tw-bg-opacity: 1;
-                background-color: rgb(77 75 103 / var(--tw-bg-opacity));
-            }
-        }
-    }
-
-    form {
-        display: flex;
-        padding-left: 4px;
-        padding-right: 4px;
-        // button {
-        //     background-color: #254560;
-        //     border-bottom-right-radius: 4px;
-        //     border-top-right-radius: 4px;
-        //     border: none;
-        //     border-left: solid white 1px;
-        //     font-size: 16px;
-        // }
-
-        .actions {
-            top: 5px;
-        }
-
-        .alert-upload {
-            --tw-text-opacity: 1;
-            color: rgb(255 71 90 / var(--tw-text-opacity));
-        }
-        .upload-file {
-            position: relative;
-            display: flex;
-            flex-wrap: nowrap;
-            .error-hover {
-                display: none;
-                left: 0;
-                min-height: 30px;
-                bottom: 35px;
-            }
-            button {
-                min-height: 0;
-                cursor: pointer;
-            }
-            &:hover {
-                .error-hover {
-                    display: flex;
-                }
-            }
-        }
-    }
-
-    input#app {
-        margin-bottom: 0;
-    }
 </style>

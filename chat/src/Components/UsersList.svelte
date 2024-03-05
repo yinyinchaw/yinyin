@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { ChevronUpIcon } from "svelte-feather-icons";
     import { fly } from "svelte/transition";
     import { get, Unsubscriber, Writable } from "svelte/store";
     import { onDestroy, onMount } from "svelte";
@@ -69,50 +68,62 @@
 </script>
 
 {#if $presenceStore.filter((user) => !get(user).isMe && get(user).active).length === 0}
-    <div
-        class="tw-px-5 tw-py-4 tw-border-b tw-border-solid tw-border-0 tw-border-transparent tw-border-b-light-purple tw-text-sm tw-text-center"
-    >
-        <p>{$LL.roomEmpty()}</p>
-        <button type="button" class="light tw-m-auto tw-cursor-pointer tw-px-3" on:click={showInviteMenu}>
+    <div class="bg-contrast/80 pb-4">
+        <div class="text-center italic">{$LL.roomEmpty()}</div>
+        <button type="button" class="m-auto btn btn-secondary btn-sm mt-3" on:click={showInviteMenu}>
             {$LL.invite()}
         </button>
     </div>
 {/if}
 {#if $loadingSubscribersStore}
-    <Loader text={$LL.loadingUsers()} height="tw-h-40" />
+    <Loader text={$LL.loadingUsers()} height="h-40" />
 {:else}
     {#each roomSorted as room (room)}
-        <div class="users tw-border-b tw-border-solid tw-border-0 tw-border-transparent tw-border-b-light-purple">
-            <div class="tw-px-4 tw-py-1 tw-flex tw-items-center">
+        <div class="users bg-contrast/80 px-4 pb-4">
+            <div
+                class="group px-4 py-2 flex items-center transition-all border border-solid border-white/10 border-[1px] bg-contrast-800 hover:bg-contrast-900 select-none rounded"
+                on:click={() => shownRoomListStore.set($shownRoomListStore === room ? "" : room)}
+            >
                 {#if !$loadingSubscribersStore}
                     <span
                         class="{room !== 'disconnected'
-                            ? 'tw-bg-light-blue'
-                            : 'tw-bg-gray'} tw-text-dark-purple tw-min-w-[20px] tw-h-5 tw-mr-3 tw-text-sm tw-font-semibold tw-flex tw-items-center tw-justify-center tw-rounded"
+                            ? 'bg-secondary'
+                            : 'bg-white/30'} min-w-[20px] h-5 mr-3 text-xs font-bold flex items-center justify-center rounded-full"
                     >
                         {usersByMaps.get(room)?.length}
                     </span>
                 {/if}
-                <p class="tw-text-light-blue tw-mb-0 tw-text-sm tw-flex-auto">
+                <div class="mb-0 flex-auto text-lg font-bold leading-5">
                     {#if $me && $me.roomName === room}
                         {$LL.userList.isHere()}
                     {:else}
                         {room}
                     {/if}
-                </p>
-                <button
-                    class="tw-text-lighter-purple"
-                    on:click={() => shownRoomListStore.set($shownRoomListStore === room ? "" : room)}
-                >
-                    <ChevronUpIcon
-                        class={`tw-transform tw-transition ${$shownRoomListStore === room ? "" : "tw-rotate-180"}`}
-                    />
+                </div>
+                <button class="m-0 btn btn-sm btn-white btn-ghost !pr-0">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="icon icon-tabler icon-tabler-chevron-up transition-all {$shownRoomListStore === room
+                            ? ''
+                            : 'rotate-180'}"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="#ffffff"
+                        fill="none"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M6 15l6 -6l6 6" />
+                    </svg>
                 </button>
             </div>
             {#if $shownRoomListStore === room}
-                <div transition:fly={{ y: -30, duration: 100 }}>
+                <div class="pt-2 pb-4" transition:fly={{ y: -30, duration: 100 }}>
                     {#if $loadingSubscribersStore}
-                        <Loader text={$LL.loadingUsers()} height="tw-h-40" />
+                        <Loader text={$LL.loadingUsers()} height="h-40" />
                     {:else}
                         {#if $me && room === $me.roomName && $me.name.toLocaleLowerCase().includes(searchValue)}
                             <ChatUser {mucRoom} user={$me} {searchValue} />

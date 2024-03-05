@@ -2,7 +2,7 @@
     import { fade, fly } from "svelte/transition";
     import { UserData } from "@workadventure/messages";
     import { onDestroy, onMount } from "svelte";
-    import { ArrowDownIcon, ArrowUpIcon } from "svelte-feather-icons";
+    import { ArrowUpIcon } from "svelte-feather-icons";
     import { get, Unsubscriber } from "svelte/store";
     import { EmojiButton } from "@joeattardi/emoji-button";
     import { ChatState } from "stanza/Constants";
@@ -162,13 +162,14 @@
         }
         picker = new EmojiButton({
             styleProperties: {
-                "--font": "Press Start 2P",
-                "--background-color": "#23222c",
-                "--text-color": "#ffffff",
-                "--secondary-text-color": "#ffffff",
-                "--category-button-color": "#ffffff",
-                "--category-button-active-color": "#56eaff",
+                "--font": "Roboto Condensed",
+                "--background-color": "rgb(42, 66, 101)",
+                "--text-color": "#00FF00",
+                "--secondary-text-color": "#00FF00",
+                "--category-button-color": "#00FF00",
+                "--category-button-active-color": "rgb(65, 86, 246)",
             },
+            position: "bottom-start",
             emojisPerRow: 5,
             autoFocusSearch: false,
             showPreview: false,
@@ -214,36 +215,32 @@
     bind:this={messagesList}
     style={`max-height: calc( 100vh - 6rem - ${formHeight - 7}px );`}
 >
-    <div class="emote-menu-container">
-        <div class="emote-menu" id="emote-picker" bind:this={emojiContainer} />
-    </div>
-
     <div
-        class="wa-messages-list tw-flex tw-flex-col tw-flex-auto tw-px-5 tw-overflow-x-hidden tw-overflow-y-scroll tw-justify-end tw-h-auto tw-min-h-screen"
+        class="wa-messages-list flex flex-col flex-auto px-5 pt-24 pb-16 justify-end h-auto min-h-screen relative z-10 overflow-x-hidden"
     >
-        <div class="tw-mb-auto load-history">
+        <div class="mb-auto load-history flex items-center pb-2">
             {#if $canLoadOlderMessagesStore}
                 {#if !$loadingStore}
                     <button
-                        class="tw-m-auto tw-cursor-pointer tw-text-xs"
+                        class="m-auto cursor-pointer text-xs rounded-xl btn btn-border btn-light btn-xs !px-3"
                         on:click={() => mucRoom.sendRetrieveLastMessages()}
                         >{$LL.load()}
                         {$LL.more()}
-                        <ArrowUpIcon size="13" class="tw-ml-1" /></button
+                        <ArrowUpIcon size="13" class="ml-1" /></button
                     >
                 {:else}
                     <div
                         style="border-top-color:transparent"
-                        class="tw-w-5 tw-h-5 tw-border-2 tw-border-white tw-border-solid tw-rounded-full tw-animate-spin tw-m-auto"
+                        class="w-5 h-5 border-2 border-white border-solid rounded-full animate-spin m-auto"
                     />
                 {/if}
             {:else if $showDisabledLoadOlderMessagesStore && $me && $me.isAdmin}
                 {#if ADMIN_API_URL}
                     <button
-                        class="tw-text-warning tw-font-bold tw-underline tw-m-auto tw-text-xs tw-cursor-pointer"
+                        class="text-warning font-bold underline m-auto text-xs cursor-pointer"
                         on:click={() => iframeListener.sendRedirectPricing()}
                     >
-                        <img alt="Crown icon" src={crown} class="tw-mr-1" />
+                        <img alt="Crown icon" src={crown} class="mr-1" />
                         {$LL.upgradeToSeeMore()}
                     </button>
                 {/if}
@@ -251,7 +248,7 @@
         </div>
         {#each $messagesStore as message, i (message.id)}
             {#if showDate(message.time, i)}
-                <div class="wa-separator">
+                <div class="wa-separator text-xs text-center w-full opacity-50">
                     {message.time.toLocaleDateString($locale, {
                         year: "numeric",
                         month: "short",
@@ -270,32 +267,35 @@
                 woka={getWoka(message.jid)}
                 needHideHeader={needHideHeader(message.name, message.time, i)}
             />
+            <div class="emote-menu-container">
+                <div class="emote-menu" id="emote-picker" bind:this={emojiContainer} />
+            </div>
         {/each}
         {#each $usersStore
             .filter((userFilter) => !get(userFilter).isMe && get(userFilter).chatState === ChatState.Composing)
             .map((user) => get(user)) as user (user.jid)}
-            <div class={`tw-mt-2`}>
-                <div class={`tw-flex tw-justify-start`}>
+            <div class={`mt-2`}>
+                <div class={`flex justify-start`}>
                     <div
-                        class={`tw-mt-4 tw-relative wa-avatar-mini tw-mr-2 tw-z-10`}
+                        class={`mt-4 relative wa-avatar-mini mr-2 z-10`}
                         style={`background-color: ${getColor(user.jid)}`}
                         in:fade={{ duration: 100 }}
                     >
                         <div class="wa-container">
-                            <img class="tw-w-full" src={getWoka(user.jid)} alt="Avatar" />
+                            <img class="w-full" src={getWoka(user.jid)} alt="Avatar" />
                         </div>
                     </div>
-                    <div class={`tw-w-3/4`} in:fly={{ x: -10, delay: 100, duration: 200 }}>
-                        <div class="tw-w-fit">
+                    <div class={`w-3/4`} in:fly={{ x: -10, delay: 100, duration: 200 }}>
+                        <div class="w-fit">
                             <div
                                 style={`border-bottom-color:${getColor(user.jid)}`}
-                                class={`tw-flex tw-justify-between tw-mx-2 tw-border-0 tw-border-b tw-border-solid tw-text-light-purple-alt tw-pb-1`}
+                                class={`flex justify-between mx-2 border-0 border-b border-solid text-light-purple-alt pb-1`}
                             >
-                                <span class="tw-text-lighter-purple tw-text-xxs">
+                                <span class="text-lighter-purple text-xxs">
                                     {user.name}
                                 </span>
                             </div>
-                            <div class="tw-rounded-lg tw-bg-dark tw-text-xs tw-p-3">
+                            <div class="rounded-lg bg-dark text-xs p-3">
                                 <!-- loading animation -->
                                 <div class="loading-group">
                                     <span class="loading-dot" />
@@ -309,20 +309,35 @@
             </div>
         {/each}
         {#if $unreads > 0}
-            <div class="tw-w-full tw-fixed tw-left-0 tw-bottom-28 tw-animate-bounce tw-cursor-pointer">
+            <div class="w-full fixed left-0 bottom-16 animate-bounce cursor-pointer">
                 <div
                     in:fly={{ y: 10, duration: 200 }}
                     style="margin: auto"
-                    class="tw-bg-lighter-purple tw-rounded-xl tw-h-5 tw-px-2 tw-w-fit tw-text-xs tw-flex tw-justify-center tw-items-center tw-shadow-grey"
+                    class="bg-secondary rounded-xl px-3 py-1 w-fit text-xs flex justify-center items-center shadow-grey"
                     role="button"
                     tabindex="0"
                     on:click={scrollDownAndRead}
                 >
-                    <ArrowDownIcon size="14" />
-                    <p class="tw-m-0">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="icon icon-tabler icon-tabler-chevrons-down"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="#ffffff"
+                        fill="none"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M7 7l5 5l5 -5" />
+                        <path d="M7 13l5 5l5 -5" />
+                    </svg>
+                    <div class="ml-1">
                         {$unreads}
                         {$unreads > 1 ? "nouveaux messages" : "nouveau message"}
-                    </p>
+                    </div>
                 </div>
             </div>
         {/if}

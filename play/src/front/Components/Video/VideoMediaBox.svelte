@@ -6,6 +6,7 @@
     import { Unsubscriber } from "svelte/store";
     import CancelablePromise from "cancelable-promise";
     import Debug from "debug";
+    import { fly } from "svelte/transition";
     import type { VideoPeer } from "../../WebRtc/VideoPeer";
     import SoundMeterWidget from "../SoundMeterWidget.svelte";
     import { highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
@@ -15,12 +16,18 @@
 
     import Woka from "../Woka/WokaFromUserId.svelte";
     import { isMediaBreakpointOnly } from "../../Utils/BreakpointsUtils";
-    // @ts-ignore
-    import microphoneOffImg from "../images/microphone-off.png";
     import { LayoutMode } from "../../WebRtc/LayoutManager";
     import { selectDefaultSpeaker, speakerSelectedStore } from "../../Stores/MediaStore";
-    import { embedScreenLayoutStore } from "../../Stores/EmbedScreensStore";
+    import { embedScreenLayoutStore, heightCamWrapper } from "../../Stores/EmbedScreensStore";
     import { analyticsClient } from "../../Administration/AnalyticsClient";
+    import loaderImg from "../images/loader.svg";
+    import MicOffIcon from "../Icons/MicOffIcon.svelte";
+    import FullScreenIcon from "../Icons/FullScreenIcon.svelte";
+    import BusinessCardIcon from "../Icons/BusinessCardIcon.svelte";
+    import VolumeIcon from "../Icons/VolumeIcon.svelte";
+    import FlagIcon from "../Icons/FlagIcon.svelte";
+    import ChevronDownIcon from "../Icons/ChevronDownIcon.svelte";
+    import MessageCircleIcon from "../Icons/MessageCircleIcon.svelte";
     import ActionMediaBox from "./ActionMediaBox.svelte";
 
     // Extend the HTMLVideoElement interface to add the setSinkId method.
@@ -55,6 +62,8 @@
     let currentDeviceId: string | undefined;
 
     let displayNoVideoWarning = false;
+
+    let showUserSubMenu = false;
 
     let aspectRatio = 1;
 
@@ -233,29 +242,26 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
-    class="video-container"
-    class:tw-h-full={$embedScreenLayoutStore === LayoutMode.VideoChat}
+    class="video-container transition-all relative h-full aspect-video"
     class:video-off={!videoEnabled}
+    class:h-full={$embedScreenLayoutStore === LayoutMode.VideoChat}
     bind:this={videoContainer}
     on:click={() => analyticsClient.pinMeetingAction()}
     on:click={() => hightlight()}
+    style="height:{$heightCamWrapper}px;"
 >
     <ActionMediaBox {embedScreen} trackStreamWraper={peer} {videoEnabled} />
 
     <div
-        style={videoEnabled
-            ? ""
-            : `border: solid 2px ${backGroundColor}; color: ${textColor}; background-color: ${backGroundColor}; color: ${textColor};`}
-        class="tw-flex tw-w-full"
-        class:tw-flex-col={videoEnabled}
-        class:tw-h-full={videoEnabled}
-        class:tw-items-center={!videoEnabled || $statusStore === "connecting" || $statusStore === "error"}
-        class:tw-pl-7={!videoEnabled}
-        class:tw-pr-2={!videoEnabled}
-        class:tw-rounded={!videoEnabled}
-        class:tw-flex-row={!videoEnabled}
-        class:tw-relative={!videoEnabled}
-        class:tw-justify-center={$statusStore === "connecting" || $statusStore === "error"}
+        class="aspect-video absolute top-0 left-0 z-20 rounded-lg transition-all bg-no-repeat bg-center bg-contrast/80 backdrop-blur"
+        style="background-image: url({loaderImg})"
+        class:flex-col={videoEnabled}
+        class:h-full={videoEnabled}
+        class:items-center={!videoEnabled || $statusStore === "connecting" || $statusStore === "error"}
+        class:px-7={!videoEnabled}
+        class:flex-row={!videoEnabled}
+        class:relative={!videoEnabled}
+        class:justify-center={$statusStore === "connecting" || $statusStore === "error"}
     >
         {#if $statusStore === "connecting"}
             <div class="connecting-spinner" />
@@ -265,15 +271,14 @@
         <!-- svelte-ignore a11y-media-has-caption -->
         <video
             bind:this={videoElement}
-            class:tw-h-0={!videoEnabled}
-            class:tw-w-0={!videoEnabled}
+            class:h-0={!videoEnabled}
+            class:w-0={!videoEnabled}
             class:object-contain={minimized || isHightlighted || aspectRatio < 1}
-            class:tw-max-h-[230px]={videoEnabled && !isHightlighted}
-            class:tw-max-h-full={videoEnabled && !isHightlighted && $embedScreenLayoutStore === LayoutMode.VideoChat}
-            class:tw-max-h-[80vh]={videoEnabled && isHightlighted}
-            class:tw-h-full={videoEnabled}
-            class:tw-rounded={videoEnabled}
-            style={$embedScreenLayoutStore === LayoutMode.Presentation ? `border: solid 2px ${backGroundColor}` : ""}
+            class:max-h-[230px]={videoEnabled && !isHightlighted}
+            class:max-h-full={videoEnabled && !isHightlighted && $embedScreenLayoutStore === LayoutMode.VideoChat}
+            class:max-h-[80vh]={videoEnabled && isHightlighted}
+            class:h-full={videoEnabled}
+            class:rounded-lg={videoEnabled}
             autoplay
             playsinline
         />
@@ -281,95 +286,119 @@
         {#if videoEnabled}
             {#if displayNoVideoWarning}
                 <div
-                    class="tw-flex media-box-camera-on-size tw-absolute tw-w-full tw-h-full ntw-justify-center tw-items-center tw-bg-danger/50 tw-text-white"
+                    class="absolute w-full h-full top-0 left-0 flex justify-center items-center bg-danger/50 text-white"
                 >
-                    <div class="tw-text-center">
-                        <h1>{$LL.video.connection_issue()}</h1>
-                        <p>{$LL.video.no_video_stream_received()}</p>
+                    <div class="text-center">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="icon icon-tabler icon-tabler-camera-exclamation"
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="#ffffff"
+                            fill="none"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M15 20h-10a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v3.5"
+                            />
+                            <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                            <path d="M19 16v3" />
+                            <path d="M19 22v.01" />
+                        </svg>
+                        <div class="text-lg bold">{$LL.video.no_video_stream_received()}</div>
+                        <div class="italic text-xs opacity-50">
+                            Consulter l'aide ou rafraichir la page <!-- Trad -->
+                        </div>
                     </div>
                 </div>
             {/if}
-            <div class="nametag-webcam-container container-end media-box-camera-on-size video-on-responsive-height">
-                <i class="tw-flex">
-                    <span
-                        style="background-color: {backGroundColor}; color: {textColor};"
-                        class="nametag-text nametag-shape tw-pr-3 tw-pl-5 tw-h-4 tw-max-h-8">{name}</span
+            <div class="absolute bottom-4 left-4 z-30">
+                <div class="flex">
+                    <div
+                        class="relative rounded bg-contrast/90 backdrop-blur px-4 py-1 text-white text-sm pl-12 pr-9 bold"
                     >
-                </i>
-            </div>
-            <div class="woka-webcam-container container-end video-on-responsive-height tw-pb-1 tw-left-0">
-                <div
-                    class="tw-flex {($constraintStore && $constraintStore.video !== false) || minimized
-                        ? ''
-                        : 'no-video'}"
-                >
-                    <Woka userId={peer.userId} placeholderSrc={""} customHeight="20px" customWidth="20px" />
+                        <div class="absolute left-1 -top-1 z-30" style="image-rendering:pixelated">
+                            <Woka
+                                userId={peer.userId}
+                                placeholderSrc={""}
+                                customHeight="42&& !$cameraEnergySavingStorepx"
+                                customWidth="42px"
+                            />
+                        </div>
+                        {name}
+                        <div
+                            class="p-1 rounded-sm hover:bg-white/20 absolute right-0 top-0 bottom-0 m-auto h-6 w-6 mr-1 transition-all pointer-events-auto {showUserSubMenu
+                                ? 'bg-white/20 hover:bg-white/30'
+                                : ''}"
+                            on:click={() => (showUserSubMenu = !showUserSubMenu)}
+                        >
+                            <ChevronDownIcon
+                                strokeWidth="2.5"
+                                height="h-4"
+                                width="w-4"
+                                classList="aspect-ratio transition-all {showUserSubMenu ? 'rotate-180' : ''}"
+                            />
+                        </div>
+                        {#if showUserSubMenu}
+                            <div
+                                class="rounded bg-contrast/80 justify-right font-normal py-1 absolute z-20 mt-1.5 right-0 text-right w-36 overflow-hidden"
+                                transition:fly={{ y: -25, duration: 50 }}
+                            >
+                                <div class="flex items-center px-4 py-1 hover:bg-white/10">
+                                    <FullScreenIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Show wide</div>
+                                    <!-- trans -->
+                                </div>
+                                <div class="flex items-center px-4 py-1 hover:bg-white/10">
+                                    <BusinessCardIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Business card</div>
+                                    <!-- trans -->
+                                </div>
+                                <div class="flex items-center px-4 py-1 hover:bg-white/10">
+                                    <MessageCircleIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Send message</div>
+                                    <!-- trans -->
+                                </div>
+                                <div class="flex items-center px-4 py-1 hover:bg-white/10">
+                                    <VolumeIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Volume</div>
+                                    <!-- trans -->
+                                </div>
+                                <div class="flex items-center px-4 py-1 hover:bg-white/10">
+                                    <MicOffIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Mute</div>
+                                    <!-- trans -->
+                                </div>
+                                <div class="flex items-center px-4 py-1 hover:bg-danger">
+                                    <FlagIcon height="h-4" width="w-4" />
+                                    <div class="pl-2">Report user</div>
+                                    <!-- trans -->
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
                 </div>
             </div>
-            {#if $constraintStore && $constraintStore.audio !== false}
-                <div
-                    class="voice-meter-webcam-container media-box-camera-off-size tw-flex tw-flex-col tw-absolute tw-items-end tw-pr-2 tw-w-full"
-                >
-                    <SoundMeterWidget volume={$volumeStore} classcss="tw-absolute" barColor="blue" />
-                </div>
-            {:else}
-                <div
-                    class="voice-meter-webcam-container media-box-camera-off-size tw-flex tw-flex-col tw-absolute tw-items-end tw-pr-2"
-                >
-                    <img draggable="false" src={microphoneOffImg} class="tw-flex tw-p-1 tw-h-8 tw-w-8" alt="Mute" />
-                </div>
-            {/if}
-        {:else if $embedScreenLayoutStore === LayoutMode.VideoChat}
             <div
-                class="tw-flex tw-flex-col tw-justify-center tw-items-center tw-content-center tw-h-full tw-w-full tw-gap-2"
+                class="z-[251] absolute aspect-ratio right-3 w-8 p-1 flex items-center justify-center {$constraintStore &&
+                $constraintStore.audio !== false
+                    ? 'bottom-4'
+                    : 'bottom-3'}"
             >
-                <Woka userId={peer.userId} placeholderSrc={""} customHeight="100px" customWidth="100px" />
-                <span
-                    style={`background-color: ${backGroundColor}; color: ${textColor}`}
-                    class="tw-font-semibold tw-text-sm tw-not-italic tw-break-words tw-px-2 tw-overflow-y-auto tw-max-h-10"
-                >
-                    {name}
-                </span>
+                {#if $constraintStore && $constraintStore.audio !== false}
+                    <SoundMeterWidget
+                        volume={$volumeStore}
+                        classcss="voice-meter-cam-off relative mr-0 ml-auto translate-x-0 transition-transform"
+                        barColor={textColor}
+                    />
+                {:else}
+                    <MicOffIcon />
+                {/if}
             </div>
-            {#if $constraintStore && $constraintStore.audio !== false}
-                <SoundMeterWidget
-                    volume={$volumeStore}
-                    classcss="voice-meter-cam-off tw-mr-0 tw-ml-auto tw-translate-x-0 tw-transition-transform tw-absolute tw-top-2 tw-right-4"
-                    barColor={textColor}
-                />
-            {:else}
-                <img
-                    draggable="false"
-                    src={microphoneOffImg}
-                    class="tw-flex tw-p-1 tw-h-8 tw-w-8 voice-meter-cam-off tw-mr-0 tw-ml-auto tw-translate-x-0 tw-transition-transform tw-absolute tw-top-2 tw-right-2"
-                    alt="Mute"
-                    class:tw-brightness-0={textColor === "black"}
-                    class:tw-brightness-100={textColor === "white"}
-                />
-            {/if}
-        {:else}
-            <Woka userId={peer.userId} placeholderSrc={""} customHeight="32px" customWidth="32px" />
-            <span
-                class="tw-font-semibold tw-text-sm tw-not-italic tw-break-words tw-px-2 tw-overflow-y-auto tw-max-h-10"
-            >
-                {name}
-            </span>
-            {#if $constraintStore && $constraintStore.audio !== false}
-                <SoundMeterWidget
-                    volume={$volumeStore}
-                    classcss="voice-meter-cam-off tw-relative tw-mr-0 tw-ml-auto tw-translate-x-0 tw-transition-transform"
-                    barColor={textColor}
-                />
-            {:else}
-                <img
-                    draggable="false"
-                    src={microphoneOffImg}
-                    class="tw-flex tw-p-1 tw-h-8 tw-w-8 voice-meter-cam-off tw-relative tw-mr-0 tw-ml-auto tw-translate-x-0 tw-transition-transform"
-                    alt="Mute"
-                    class:tw-brightness-0={textColor === "black"}
-                    class:tw-brightness-100={textColor === "white"}
-                />
-            {/if}
         {/if}
     </div>
 </div>

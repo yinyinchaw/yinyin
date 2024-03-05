@@ -3,25 +3,25 @@
 @import '@workadventure/tailwind/style/index.scss';
 
 ::-webkit-scrollbar {
-    width: 4px;
+    width: 1px;
 }
 ::-webkit-scrollbar-track {
-    background: none;
+    @apply bg-none;
 }
 ::-webkit-scrollbar-thumb {
-    @apply tw-bg-lighter-purple;
-    border-radius: 10px;
+    @apply bg-white;
 }
 ::-webkit-scrollbar-thumb:active {
-    @apply tw-bg-light-blue;
+    @apply bg-light-blue;
 }
 
 .emoji-picker__overlay{
     background: none!important;
 }
 .emoji-picker__wrapper{
-    bottom: 50px!important;
+    bottom: 0;
     top: auto!important;
+    z-index: 1000;
     .emoji-picker{
         border: none!important;
     }
@@ -29,21 +29,16 @@
 
 .wa-message{
     .actions{
-        visibility: hidden;
-        justify-content: space-between;
         .action{
-            cursor: pointer;
-            opacity: 0.8;
-            position: relative;
             .caption{
-                @apply tw-absolute tw-bg-dark-blue tw-px-2 tw-py-1 tw-rounded-xl tw-border-lighter-purple tw-border tw-border-solid;
+                @apply absolute bg-contrast px-2 py-1 rounded-xl;
                 display: none;
                 top: -32px;
                 left: 50%;
                 transform: translateX(-50%);
                 z-index: 10;
                 &::before{
-                    @apply tw-absolute tw-border-t-lighter-purple;
+                    @apply absolute border-t-contrast;
                     left: calc( 50% - 10px );
                     top: 100.5%;
                     content: '';
@@ -55,7 +50,7 @@
                     border-top-style: solid;
                 }
                 &::after{
-                    @apply tw-absolute tw-border-t-dark-blue;
+                    @apply absolute border-t-contrast;
                     margin-left: -50%;
                     top: 100%;
                     content: '';
@@ -82,9 +77,8 @@
     }
 }
 .wa-message-body{
-    @apply tw-rounded-lg tw-bg-dark tw-text-xs tw-px-3 tw-py-2 tw-text-left;
     p{
-        @apply tw-whitespace-pre-line;
+        @apply whitespace-pre-line;
         margin: 0;
         .mention{
             margin: 0 2px;
@@ -96,7 +90,7 @@
     }
 
     .file {
-        @apply tw-mt-1;
+        @apply mt-1;
         position: relative;
         &:hover {
             .actions {
@@ -114,16 +108,16 @@
             border-radius: 0.25rem;
             border-width: 1px;
             border-style: solid;
-            --tw-border-opacity: 1;
-            border-color: rgb(77 75 103 / var(--tw-border-opacity));
+            --border-opacity: 1;
+            border-color: rgb(77 75 103 / var(--border-opacity));
             background-color: rgb(27 27 41 / 0.95);
             font-size: 0.75rem;
             line-height: 1rem;
             font-weight: 500;
-            color: rgb(255 255 255 / var(--tw-text-opacity));
-            --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
-            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+            color: rgb(255 255 255 / var(--text-opacity));
+            --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-colored: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
+            box-shadow: var(--ring-offset-shadow, 0 0 #0000), var(--ring-shadow, 0 0 #0000), var(--shadow);
             z-index: 1;
 
             .action {
@@ -138,28 +132,22 @@
                 }
 
                 &:hover {
-                    --tw-bg-opacity: 1;
-                    background-color: rgb(77 75 103 / var(--tw-bg-opacity));
-                }
-            }
-
-            &:hover {
-                span.action > span {
-                    display: block;
+                    --bg-opacity: 1;
+                    background-color: rgb(77 75 103 / var(--bg-opacity));
                 }
             }
         }
 
         .other-content {
-            @apply tw-p-0.5 tw-cursor-pointer tw-rounded tw-mr-0.5;
+            @apply p-0.5 cursor-pointer rounded mr-0.5;
             position: relative;
             display: flex;
             flex-direction: row;
             align-items: center;
-            --tw-bg-opacity: 1;
-            border: solid 1px rgb(77 75 103 / var(--tw-bg-opacity));
+            --bg-opacity: 1;
+            border: solid 1px rgb(77 75 103 / var(--bg-opacity));
             &:hover {
-                background-color: rgb(77 75 103 / var(--tw-bg-opacity));
+                background-color: rgb(77 75 103 / var(--bg-opacity));
             }
             .icon{
             }
@@ -174,36 +162,65 @@
 .selected {
     .wa-message{
         &::after{
-            @apply tw-animate-ping;
+            @apply animate-ping;
         }
     }
 }
 
 
-aside.chatWindow nav{
-    @apply tw-bg-dark-purple tw-p-1 tw-mx-3 tw-mb-1 tw-rounded-2xl tw-border-solid tw-border tw-border-light-purple tw-relative;
-    width: calc( 100% - 65px );
-}
 aside.chatWindow nav .background{
-    @apply tw-rounded-xl tw-transition-transform tw-transform tw-bg-light-blue tw-absolute;
+    @apply rounded-xl transition-transform transform bg-light-blue absolute;
     height: 26px;
     width: 48.5%;
 }
 aside.chatWindow nav .background.chat{
-    @apply tw-translate-x-full;
+    @apply translate-x-full;
 }
 aside.chatWindow nav ul{
-    @apply tw-flex tw-list-none tw-justify-between tw-w-full tw-p-0 tw-m-0;
-}
-aside.chatWindow nav ul li{
-    @apply tw-text-center tw-rounded tw-font-bold tw-transition-transform tw-transform tw-cursor-pointer tw-rounded-2xl;
-    padding: 1px 0;
-    width: 48.5%;
-}
-aside.chatWindow nav ul li:not(.active):hover{
-    background-color: rgba(146, 142, 187, .3);
+    @apply flex list-none justify-between w-full p-0 m-0;
 }
 
-aside.chatWindow nav ul li.active{
-    @apply tw-text-black tw-cursor-default;
+div.emoji-picker {
+    @apply bg-contrast/80 backdrop-blur rounded-lg border-none pointer-events-auto;
+    input.emoji-picker__search {
+        border-radius: 1em;
+    }
+    .emoji-picker__content {
+        @apply pb-0 px-0;
+    }
+    button.emoji-picker__category-button {
+        @apply relative z-10;
+        &:not(.active) {
+            @apply opacity-50 transition-all;
+            &:hover {
+                @apply opacity-100;
+            }
+        }
+        &.active {
+
+        }
+    }
+    .emoji-picker__emoji {
+        @apply transition-all rounded;
+        &:focus, &:hover {
+            @apply bg-white/10;
+        }
+    }
+    .emoji-picker__emojis {
+        h2.emoji-picker__category-name {
+            @apply text-xs uppercase text-white/50 pl-3 font-normal first:mt-3;
+        }
+    }
+    .emoji-picker__search-container {
+        @apply flex items-center;
+        .emoji-picker__search {
+            @apply pl-4 bg-white/10 border-none placeholder:text-white/50;
+        }
+        .emoji-picker__search-icon {
+            @apply static px-3 opacity-20;
+        }
+    }
+    .emoji-picker__category-buttons {
+        @apply m-0 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-white/20;
+    }
 }

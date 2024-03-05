@@ -8,23 +8,23 @@
 </script>
 
 {#if chatZones.length > 0}
-    <div id="chatZones" class="tw-border-b tw-border-solid tw-border-0 tw-border-transparent tw-border-b-light-purple">
+    <div id="chatZones" class="bg-contrast/80">
         <div
-            class="tw-px-4 tw-py-1 tw-flex tw-items-center tw-cursor-pointer"
+            class="px-8 flex items-center"
             on:click|stopPropagation={() => showChatZonesStore.set(!$showChatZonesStore)}
         >
             <span
-                class="tw-bg-light-blue tw-text-dark-purple tw-w-5 tw-h-5 tw-mr-3 tw-text-sm tw-font-semibold tw-flex tw-items-center tw-justify-center tw-rounded"
+                class="bg-success text-dark min-w-[20px] h-5 mr-3 text-xs font-bold flex items-center justify-center rounded-full"
             >
                 {chatZones.length}
             </span>
-            <p class="tw-text-light-blue tw-my-2 tw-text-sm tw-flex-auto">Chat zones</p>
-            <!--<button class="tw-text-lighter-purple">
-                <ChevronUpIcon class={`tw-transform tw-transition ${$showLivesStore ? "" : "tw-rotate-180"}`} />
+            <p class="font-title font-lg uppercase opacity-50">Chat zones</p>
+            <!--<button class="text-lighter-purple">
+                <ChevronUpIcon class={`transform transition ${$showLivesStore ? "" : "rotate-180"}`} />
             </button>
             -->
         </div>
-        <div>
+        <div class="px-4 pb-4">
             {#each chatZones as chatZone (chatZone.url)}
                 <ChatMucRoom mucRoom={chatZone} {searchValue} />
             {/each}

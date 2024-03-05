@@ -7,6 +7,7 @@
     import { myCameraStore, proximityMeetingStore } from "../../../Stores/MyMediaStore";
     import { isMediaBreakpointUp } from "../../../Utils/BreakpointsUtils";
 
+    export let cardHeight = 196;
     let layoutDom: HTMLDivElement;
     let displayFullMedias = isMediaBreakpointUp("md");
 
@@ -18,17 +19,14 @@
         resizeObserver.observe(layoutDom);
         highlightedEmbedScreen.removeHighlight();
     });
+    $: console.log(cardHeight);
 </script>
 
-<div
-    id="mozaic-layout"
-    class="tw-flex tw-justify-center tw-content-center tw-items-center lg:tw-pt-9 tw-pb-16"
-    bind:this={layoutDom}
->
+<div id="mozaic-layout" class="flex justify-center content-center items-center lg:pt-9 pb-16" bind:this={layoutDom}>
     <div
-        class="media-container tw-grid mozaic-grid tw-content-start tw-backdrop-blur-sm tw-bg-black/20 tw-pointer-events-auto tw-max-h-full tw-overflow-y-auto"
-        class:tw-grid-cols-1={$streamableCollectionStore.size === 1}
-        class:tw-grid-cols-2={$streamableCollectionStore.size >= 2}
+        class="media-container grid mozaic-grid content-start backdrop-blur-sm bg-black/20 pointer-events-auto max-h-full overflow-y-auto"
+        class:grid-cols-1={$streamableCollectionStore.size === 1}
+        class:grid-cols-2={$streamableCollectionStore.size >= 2}
     >
         {#each [...$streamableCollectionStore] as [uniqueId, peer] (uniqueId)}
             <MediaBox
@@ -51,7 +49,7 @@
             />
         {/if}
     </div>
-    <div class="tw-absolute tw-self-end tw-z-[300] tw-bottom-6 md:tw-bottom-4 tw-right-5">
+    <div class="absolute self-end z-[300] bottom-6 md:bottom-4 right-5">
         {#if $myCameraStore && !displayFullMedias}
             <MyCamera />
         {/if}
