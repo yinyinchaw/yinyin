@@ -31,7 +31,7 @@ import {
     ERASER_ENABLED,
 } from "../enums/EnvironmentVariable";
 import type { AdminInterface } from "./AdminInterface";
-import type { AdminBannedData, FetchMemberDataByUuidResponse } from "./AdminApi";
+import type { AdminBannedData, FetchMemberDataByUuidResponse, FetchMemberDataForAWorld } from "./AdminApi";
 import { localWokaService } from "./LocalWokaService";
 import { MetaTagsDefaultValue } from "./MetaTagsBuilder";
 import { localCompanionService } from "./LocalCompanionSevice";
@@ -48,12 +48,12 @@ class LocalAdmin implements AdminInterface {
         ipAddress: string,
         characterTextureIds: string[],
         companionTextureId?: string,
-        locale?: string,
-        tags?: string[]
+        locale?: string
     ): Promise<FetchMemberDataByUuidResponse> {
         let canEdit = false;
         const roomUrl = new URL(playUri);
         const match = /\/~\/(.+)/.exec(roomUrl.pathname);
+
         if (
             match &&
             ENABLE_MAP_EDITOR &&
@@ -83,17 +83,11 @@ class LocalAdmin implements AdminInterface {
             }
         }
 
-        if (tags) {
-            if (tags?.includes("admin") || tags?.includes("editor")) {
-                canEdit = true;
-            }
-        }
-
         return {
             status: "ok",
             email: userIdentifier,
             userUuid: userIdentifier,
-            tags: tags ?? [],
+            tags: [],
             messages: [],
             visitCardUrl: null,
             isCharacterTexturesValid,
@@ -104,6 +98,7 @@ class LocalAdmin implements AdminInterface {
             mucRooms,
             activatedInviteUser: true,
             canEdit,
+            world : 'localWorld'
         };
     }
 
@@ -281,6 +276,13 @@ class LocalAdmin implements AdminInterface {
         return Promise.resolve({
             "api/woka/list": "v1",
             "api/companion/list": "v1",
+        });
+    }
+
+    async getMembersOfWorld(playUri: string, searchText: string = ""): Promise<FetchMemberDataForAWorld> {
+        return Promise.resolve({
+            total: 0,
+            members: [],
         });
     }
 }
