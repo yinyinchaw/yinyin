@@ -87,7 +87,9 @@
     function openCowebsite() {
         if (embedLink) openCoWebSite(embedLink, true, "allowfullscreen").catch(error=>console.error(error));
         if (message.links)
-            message.links.forEach((link) => openCoWebSite(link.url, true, "allowfullscreen").catch(error=>console.error(error)));
+            message.links.forEach((link) => {
+                openCoWebSite(link.url, true, "allowfullscreen").catch(error => console.error(error));
+            });
     }
 
     function downloadAllFile() {

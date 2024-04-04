@@ -12,7 +12,7 @@ import { mucRoomsStore } from "../Stores/MucRoomsStore";
 import { availabilityStatusStore } from "../../Stores/MediaStore";
 import { filesUploadStore, mentionsUserStore } from "../Stores/ChatStore";
 import { Message } from "../Model/Message";
-import { NotificationType, mediaManager } from "../../WebRtc/MediaManager";
+import { mediaManager, NotificationType } from "../../WebRtc/MediaManager";
 import { fileMessageManager } from "../Service/FileMessageManager";
 import { gameManager } from "../../Phaser/Game/GameManager";
 import { connectionManager } from "../../Connection/ConnectionManager";
@@ -163,7 +163,8 @@ export class MucRoom extends AbstractRoom {
         }
 
         // Send ban message to parent iframe
-        if (uuid != undefined && name != undefined) gameManager.getCurrentGameScene().connection?.emitBanPlayerMessage(uuid, name);
+        if (uuid != undefined && name != undefined)
+            gameManager.getCurrentGameScene().connection?.emitBanPlayerMessage(uuid, name);
 
         void this.sendAffiliate("outcast", userJID);
         debug(`[XMPP][${this.name}] >> Ban user message sent`);
@@ -607,7 +608,7 @@ export class MucRoom extends AbstractRoom {
             );
         }
     }
-    updateUserPart(jid: ParsedJID, parts: Object) {
+    updateUserPart(jid: ParsedJID, parts: object) {
         const user = this.presenceStore.get(jid.full);
         if (user) {
             user.update((user_) => {

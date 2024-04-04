@@ -93,6 +93,11 @@ import {
 import { selectCompanionSceneVisibleStore } from "../Stores/SelectCompanionStore";
 import { selectCharacterSceneVisibleStore } from "../Stores/SelectCharacterStore";
 import type { UserSimplePeerInterface } from "../WebRtc/SimplePeer";
+import { SpaceStreams } from "../Space/SpaceWatcher/SpaceStreamsInterface";
+import {
+    SpaceEventEmitterInterface,
+    SpaceFilterEventEmitterInterface,
+} from "../Space/SpaceEventEmitter/SpaceEventEmitterInterface";
 import { adminMessagesService } from "./AdminMessagesService";
 import { connectionManager } from "./ConnectionManager";
 import type {
@@ -1683,6 +1688,7 @@ export class RoomConnection implements RoomConnection {
             },
         });
     }
+
     public getSpaceStreams(): SpaceStreams {
         return {
             addSpaceUserMessage: this.addSpaceUserMessageStream,
