@@ -105,6 +105,9 @@ export const isFetchMemberDataByUuidSuccessResponse = z.object({
     canEdit: extendApi(z.boolean().nullable().optional(), {
         description: "True if the user can edit the map",
     }),
+    world: extendApi(z.string(), {
+        description: "name of the world",
+    }),
 });
 
 export const isFetchMemberDataForAWorld = z.object({
@@ -998,14 +1001,14 @@ class AdminApi implements AdminInterface {
     }
 
     //TODO : @openapi doc
-    async getMembersOfWorld(playUri : string, searchText  = ""): Promise<FetchMemberDataForAWorld> {
-        const response: { total: number; data: UserData[] } = await axios.get(
-            `${ADMIN_API_URL}/api/worlds/${worldSlug}/members`,
-            {
-                headers: { Authorization: `${ADMIN_API_TOKEN}` },
-            }
-        );
-
+    async getMembersOfWorld(playUri: string, searchText = ""): Promise<FetchMemberDataForAWorld> {
+        const response: { total: number; data: UserData[] } = await axios.get(`${ADMIN_API_URL}/api/chat/members`, {
+            headers: { Authorization: `${ADMIN_API_TOKEN}` },
+            params: {
+                playUri,
+                searchText,
+            },
+        });
 
         //TODO: Validate response with zod
 

@@ -4,9 +4,9 @@ import { ChatMessagePrompt, RoomsList } from "@workadventure/messages";
 import { z } from "zod";
 import { apiClientRepository } from "../services/ApiClientRepository";
 import { adminToken } from "../middlewares/AdminToken";
-import { validatePostQuery } from "../services/QueryValidator";
-import { adminService } from "../services/AdminService";
+import { validatePostQuery, validateQuery } from "../services/QueryValidator";
 import { BaseHttpController } from "./BaseHttpController";
+import { adminService } from "../services/AdminService";
 
 export class AdminController extends BaseHttpController {
     routes(): void {
@@ -398,10 +398,27 @@ export class AdminController extends BaseHttpController {
             return;
         });
     }
-
     getMembersOfTheActualWorld(): void {
-        this.app.get("/worlds/:worldslug/members", async (req: Request, res: Response) => {
-            const { members, total } = await adminService.getMembersOfWorld(req.params.worldslug);
+        this.app.options("/chat/members", (req, res) => {
+            res.atomic(() => {
+                res.status(200).send();
+            });
+        });
+        this.app.get("/chat/members", async (req: Request, res: Response) => {
+            //TODO : Validate Query Object with zod
+
+            const query = validateQuery(
+                req,
+                res,
+                z.object({
+                    playUri: z.string(),
+                    searchText: z.string().optional(),
+                })
+            );
+
+            if (!query) return;
+
+            const { members, total } = await adminService.getMembersOfWorld(query.playUri, query.searchText);
 
             const MAX_USER_TO_DISPLAY = 200;
 
@@ -417,9 +434,11 @@ export class AdminController extends BaseHttpController {
                 });
             }
 
-            return res.status(202).json({
-                members,
+            res.atomic(() => {
+                res.setHeader("Content-Type", "application/json").send(JSON.stringify({ members }));
             });
+
+            return;
         });
     }
 }

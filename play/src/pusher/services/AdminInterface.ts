@@ -8,7 +8,6 @@ export interface AdminInterface {
      * @var worldslug is the name of the world
      * @return Promise<FetchMemberDataForAWorld>
      */
-    fetch;
     getMembersOfWorld(worldslug: string): Promise<FetchMemberDataForAWorld>;
 
     /**
