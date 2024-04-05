@@ -1,6 +1,6 @@
 import type { AxiosResponse } from "axios";
 import axios, { isAxiosError } from "axios";
-import type { AdminApiData, MapDetailsData, MemberData, RoomRedirect, UserData } from "@workadventure/messages";
+import type { AdminApiData, ChatMemberData, MapDetailsData, MemberData, RoomRedirect } from "@workadventure/messages";
 import {
     Capabilities,
     CompanionDetail,
@@ -33,6 +33,11 @@ import { ShortMapDescriptionList } from "./ShortMapDescription";
 export interface AdminBannedData {
     is_banned: boolean;
     message: string;
+}
+
+export interface WorldChatMembersData {
+    total: number;
+    members: ChatMemberData[];
 }
 
 export const isFetchMemberDataByUuidSuccessResponse = z.object({
@@ -110,7 +115,7 @@ export const isFetchMemberDataByUuidSuccessResponse = z.object({
     }),
 });
 
-export const isFetchMemberDataForAWorld = z.object({
+export const isFetchWorldChatMembers = z.object({
     total: z.number().positive(),
     members: z.array(isFetchMemberDataByUuidSuccessResponse),
 });
@@ -120,7 +125,7 @@ export const isFetchMemberDataByUuidResponse = z.union([isFetchMemberDataByUuidS
 
 export type FetchMemberDataByUuidResponse = z.infer<typeof isFetchMemberDataByUuidResponse>;
 
-export type FetchMemberDataForAWorld = z.infer<typeof isFetchMemberDataForAWorld>;
+export type FetchWorldChatMembers = z.infer<typeof isFetchWorldChatMembers>;
 
 class AdminApi implements AdminInterface {
     private capabilities: Capabilities = {};
@@ -1001,20 +1006,17 @@ class AdminApi implements AdminInterface {
     }
 
     //TODO : @openapi doc
-    async getMembersOfWorld(playUri: string, searchText = ""): Promise<FetchMemberDataForAWorld> {
-        const response: { total: number; data: UserData[] } = await axios.get(`${ADMIN_API_URL}/api/chat/members`, {
+    async getWorldChatMembers(playUri: string, searchText = ""): Promise<WorldChatMembersData> {
+        const response = await axios.get<WorldChatMembersData>(`${ADMIN_API_URL}/api/chat/members`, {
             headers: { Authorization: `${ADMIN_API_TOKEN}` },
             params: {
                 playUri,
                 searchText,
             },
         });
-
-        //TODO: Validate response with zod
-
         return {
-            total: response.total,
-            members: response.data,
+            total: response.data.total,
+            members: response.data.members,
         };
     }
 

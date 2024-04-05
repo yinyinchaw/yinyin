@@ -1,5 +1,5 @@
 import { v4 } from "uuid";
-import { RegisterData, MeResponse, MeRequest } from "@workadventure/messages";
+import { MeRequest, MeResponse, RegisterData } from "@workadventure/messages";
 import { z } from "zod";
 import * as Sentry from "@sentry/node";
 import { JsonWebTokenError } from "jsonwebtoken";
@@ -429,6 +429,7 @@ export class AuthenticateController extends BaseHttpController {
                 undefined,
                 undefined,
                 undefined,
+                [],
                 matrixUserId
             );
 

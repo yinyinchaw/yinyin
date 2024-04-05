@@ -1,17 +1,17 @@
 import HyperExpress, { compressors } from "hyper-express";
 import { z } from "zod";
 import {
+    AnswerMessage,
     apiVersionHash,
     ClientToServerMessage,
+    CompanionDetail,
     ErrorApiData,
     ServerToClientMessage as ServerToClientMessageTsProto,
-    SubMessage,
-    WokaDetail,
+    ServerToClientMessage,
     SpaceFilterMessage,
     SpaceUser,
-    CompanionDetail,
-    ServerToClientMessage,
-    AnswerMessage,
+    SubMessage,
+    WokaDetail,
 } from "@workadventure/messages";
 import Jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
@@ -349,6 +349,7 @@ export class IoSocketController {
                             mucRooms: [],
                             activatedInviteUser: true,
                             canEdit: false,
+                            world: "",
                         };
 
                         let characterTextures: WokaDetail[];
@@ -857,6 +858,18 @@ export class IoSocketController {
                                         answerMessage.answer = {
                                             $case: "searchMemberAnswer",
                                             searchMemberAnswer: searchMemberAnswer,
+                                        };
+                                        this.sendAnswerMessage(socket, answerMessage);
+                                        break;
+                                    }
+                                    case "chatMembersQuery": {
+                                        const chatMembersAnswer = await socketManager.handleChatMembersQuery(
+                                            socket,
+                                            message.message.queryMessage.query.chatMembersQuery
+                                        );
+                                        answerMessage.answer = {
+                                            $case: "chatMembersAnswer",
+                                            chatMembersAnswer: chatMembersAnswer,
                                         };
                                         this.sendAnswerMessage(socket, answerMessage);
                                         break;

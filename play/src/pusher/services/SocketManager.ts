@@ -1,43 +1,45 @@
 import Debug from "debug";
 import type { compressors } from "hyper-express";
 import {
+    AddSpaceFilterMessage,
     AdminMessage,
     AdminPusherToBackMessage,
     AdminRoomMessage,
+    BackToPusherSpaceMessage,
     BanMessage,
+    BanPlayerMessage,
+    ChatMembersAnswer,
+    ChatMembersQuery,
     EmoteEventMessage,
     ErrorApiData,
     ErrorMessage,
     ErrorScreenMessage,
+    GetMemberAnswer,
+    GetMemberQuery,
     JoinRoomMessage,
+    MegaphoneStateMessage,
+    MemberData,
     MucRoomDefinition,
+    PartialSpaceUser,
     PlayerDetailsUpdatedMessage,
     PlayGlobalMessage,
     PusherToBackMessage,
+    PusherToBackSpaceMessage,
+    QueryMessage,
+    RemoveSpaceFilterMessage,
     ReportPlayerMessage,
+    SearchMemberAnswer,
+    SearchMemberQuery,
     ServerToAdminClientMessage,
     ServerToClientMessage,
-    UserMovesMessage,
-    ViewportMessage,
-    XmppSettingsMessage,
-    PusherToBackSpaceMessage,
-    BackToPusherSpaceMessage,
-    PartialSpaceUser,
-    AddSpaceFilterMessage,
-    UpdateSpaceFilterMessage,
-    RemoveSpaceFilterMessage,
     SetPlayerDetailsMessage,
     SpaceFilterMessage,
-    WatchSpaceMessage,
-    QueryMessage,
-    MegaphoneStateMessage,
+    UpdateSpaceFilterMessage,
     UpdateSpaceMetadataMessage,
-    BanPlayerMessage,
-    SearchMemberQuery,
-    SearchMemberAnswer,
-    MemberData,
-    GetMemberQuery,
-    GetMemberAnswer,
+    UserMovesMessage,
+    ViewportMessage,
+    WatchSpaceMessage,
+    XmppSettingsMessage,
 } from "@workadventure/messages";
 import * as Sentry from "@sentry/node";
 import axios, { isAxiosError } from "axios";
@@ -1536,6 +1538,15 @@ export class SocketManager implements ZoneEventListener {
                 email: memberFromApi.email ?? undefined,
                 visitCardUrl: memberFromApi.visitCardUrl ?? undefined,
             },
+        };
+    }
+
+    async handleChatMembersQuery(client: Socket, chatMemberQuery: ChatMembersQuery): Promise<ChatMembersAnswer> {
+        const { roomId } = client.getUserData();
+        const { total, members } = await adminService.getWorldChatMembers(roomId, chatMemberQuery.searchText);
+        return {
+            total,
+            members,
         };
     }
 }

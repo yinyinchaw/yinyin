@@ -12,6 +12,7 @@ import {
     AskMuteVideoMessage,
     AvailabilityStatus,
     CharacterTextureMessage,
+    ChatMembersAnswer,
     ClientToServerMessage as ClientToServerMessageTsProto,
     CompanionTextureMessage,
     DeleteCustomEntityMessage,
@@ -1619,6 +1620,19 @@ export class RoomConnection implements RoomConnection {
             throw new Error("Member is undefined.");
         }
         return answer.getMemberAnswer.member;
+    }
+
+    public async queryChatMembers(searchText: string): Promise<ChatMembersAnswer> {
+        const answer = await this.query({
+            $case: "chatMembersQuery",
+            chatMembersQuery: {
+                searchText,
+            },
+        });
+        if (answer.$case !== "chatMembersAnswer") {
+            throw new Error("Unexpected answer");
+        }
+        return answer.chatMembersAnswer;
     }
 
     public emitMuteParticipantIdSpace(spaceName: string, participantId: string) {
