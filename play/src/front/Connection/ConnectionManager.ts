@@ -483,6 +483,7 @@ class ConnectionManager {
                     playUri,
                     localStorageCharacterTextureIds: localUserStore.getCharacterTextures() ?? undefined,
                     localStorageCompanionTextureId: localUserStore.getCompanionTextureId() ?? undefined,
+                    chatID: localUserStore.getChatId() ?? undefined,
                 },
             })
             .then((res) => {

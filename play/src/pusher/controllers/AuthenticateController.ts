@@ -137,7 +137,7 @@ export class AuthenticateController extends BaseHttpController {
             if (query === undefined) {
                 return;
             }
-            const { token, playUri, localStorageCompanionTextureId } = query;
+            const { token, playUri, localStorageCompanionTextureId, chatID } = query;
             let localStorageCharacterTextureIds = query["localStorageCharacterTextureIds[]"];
             if (typeof localStorageCharacterTextureIds === "string") {
                 localStorageCharacterTextureIds = [localStorageCharacterTextureIds];
@@ -155,7 +155,8 @@ export class AuthenticateController extends BaseHttpController {
                     localStorageCharacterTextureIds ?? [],
                     localStorageCompanionTextureId,
                     req.header("accept-language"),
-                    authTokenData.tags
+                    authTokenData.tags,
+                    chatID
                 );
 
                 if (resUserData.status === "error") {

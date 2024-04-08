@@ -1528,8 +1528,6 @@ export class GameScene extends DirtyScene {
                 const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
                 StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);
 
-                spaceProvider.add("worldSpace");
-
                 spaceProvider.add(WORLD_SPACE_NAME);
 
                 this.tryOpenMapEditorWithToolEditorParameter();

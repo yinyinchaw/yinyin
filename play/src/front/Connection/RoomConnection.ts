@@ -94,10 +94,6 @@ import {
 import { selectCompanionSceneVisibleStore } from "../Stores/SelectCompanionStore";
 import { selectCharacterSceneVisibleStore } from "../Stores/SelectCharacterStore";
 import type { UserSimplePeerInterface } from "../WebRtc/SimplePeer";
-import {
-    SpaceEventEmitterInterface,
-    SpaceFilterEventEmitterInterface,
-} from "../Space/SpaceEventEmitter/SpaceEventEmitterInterface";
 import { adminMessagesService } from "./AdminMessagesService";
 import { connectionManager } from "./ConnectionManager";
 import type {
@@ -117,7 +113,7 @@ const manualPingDelay = 100000;
 
 export class RoomConnection implements RoomConnection {
     private static websocketFactory: null | ((url: string) => any) = null; // eslint-disable-line @typescript-eslint/no-explicit-any
-    private readonly socket: WebSocket;
+    public readonly socket: WebSocket;
     private userId: number | null = null;
     private closed = false;
     private tags: string[] = [];

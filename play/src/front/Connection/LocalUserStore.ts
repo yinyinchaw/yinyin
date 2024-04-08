@@ -568,6 +568,11 @@ class LocalUserStore {
     getMatrixDeviceId(userUuid: string): string | null {
         return localStorage.getItem(matrixDeviceId + "_" + userUuid);
     }
+
+    //TODO : Remove duplicate code (getMatrixUserId) and change matrix id to chatID in localStorage
+    getChatId(): string | null {
+        return localStorage.getItem(matrixUserId);
+    }
 }
 
 export const localUserStore = new LocalUserStore();

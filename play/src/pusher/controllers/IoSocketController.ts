@@ -234,6 +234,13 @@ export class IoSocketController {
                         upgradeAborted.aborted = true;
                     });
 
+
+                    /*
+                    Add matrixId/ChatID in the query 
+                    Verify if is the same as the adminService request
+                    if is null in admin request send to admin for save
+                    if !== to adminService ? 
+                    */
                     const query = validateWebsocketQuery(
                         req,
                         res,
