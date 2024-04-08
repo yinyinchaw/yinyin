@@ -1,4 +1,5 @@
 import {
+    ClientToServerMessage,
     PartialSpaceUser,
     SpaceFilterContainName,
     SpaceFilterEverybody,
@@ -8,7 +9,6 @@ import {
 } from "@workadventure/messages";
 import { Subject } from "rxjs";
 import { Writable, get, writable } from "svelte/store";
-import { SpaceFilterEventEmitterInterface } from "../SpaceEventEmitter/SpaceEventEmitterInterface";
 import { CharacterLayerManager } from "../../Phaser/Entity/CharacterLayerManager";
 
 export interface SpaceFilterInterface {
@@ -51,28 +51,22 @@ export type Filter =
     | undefined;
 
 export interface JitsiEventEmitter {
-    emitKickOffUserMessage(): void;
+    emitKickOffUserMessage(userId: string): void;
     emitMuteEveryBodySpace(): void;
     emitMuteVideoEveryBodySpace(): void;
-    emitMuteParticipantIdSpace(): void;
-    emitMuteVideoParticipantIdSpace(): void;
+    emitMuteParticipantIdSpace(userId: string): void;
+    emitMuteVideoParticipantIdSpace(userId: string): void;
 }
 
 export class SpaceFilter implements SpaceFilterInterface {
-    private jitsiEventEmitter: JitsiEventEmitter | undefined = undefined;
     constructor(
         private name: string,
         private spaceName: string,
         private filter: Filter = undefined,
-        private spaceFilterEventEmitter: SpaceFilterEventEmitterInterface | undefined = undefined,
+        private sender: (message: ClientToServerMessage) => void,
         readonly users: Writable<Map<number, SpaceUserExtended>> = writable(new Map<number, SpaceUserExtended>())
     ) {
-        const spaceFilterMessage: SpaceFilterMessage = {
-            filterName: name,
-            spaceName: spaceName,
-        };
-        if (!spaceFilterEventEmitter) return;
-        spaceFilterEventEmitter.addSpaceFilter(spaceFilterMessage);
+        this.addSpaceFilter();
     }
     userExist(userId: number): boolean {
         return get(this.users).has(userId);
@@ -83,8 +77,6 @@ export class SpaceFilter implements SpaceFilterInterface {
             if (!this.userExist(user.id)) value.set(user.id, extendSpaceUser);
             return value;
         });
-
-    
     }
 
     getUser(userId: number): SpaceUser | null {
@@ -119,12 +111,7 @@ export class SpaceFilter implements SpaceFilterInterface {
 
     setFilter(newFilter: Filter) {
         this.filter = newFilter;
-        if (this.spaceFilterEventEmitter)
-            this.spaceFilterEventEmitter.updateSpaceFilter({
-                filter: newFilter,
-                spaceName: this.spaceName,
-                filterName: this.name,
-            });
+        this.updateSpaceFilter();
     }
     getName(): string {
         return this.name;
@@ -132,33 +119,24 @@ export class SpaceFilter implements SpaceFilterInterface {
 
     private extendSpaceUser(user: SpaceUser, spaceName: string): SpaceUserExtended {
         let emitter = undefined;
-        if (this.spaceFilterEventEmitter) {
-            const {
-                emitKickOffUserMessage,
-                emitMuteEveryBodySpace,
-                emitMuteVideoEveryBodySpace,
-                emitMuteParticipantIdSpace,
-                emitMuteVideoParticipantIdSpace,
-            } = this.spaceFilterEventEmitter;
 
-            emitter = {
-                emitKickOffUserMessage: () => {
-                    emitKickOffUserMessage(spaceName, user.id.toString());
-                },
-                emitMuteEveryBodySpace: () => {
-                    emitMuteEveryBodySpace(spaceName);
-                },
-                emitMuteParticipantIdSpace: () => {
-                    emitMuteParticipantIdSpace(spaceName, user.id.toString());
-                },
-                emitMuteVideoEveryBodySpace: () => {
-                    emitMuteVideoEveryBodySpace(spaceName);
-                },
-                emitMuteVideoParticipantIdSpace: () => {
-                    emitMuteVideoParticipantIdSpace(spaceName, user.id.toString());
-                },
-            };
-        }
+        emitter = {
+            emitKickOffUserMessage: (userId: string) => {
+                this.emitKickOffUserMessage(userId);
+            },
+            emitMuteEveryBodySpace: () => {
+                this.emitMuteEveryBodySpace(user.id.toString());
+            },
+            emitMuteParticipantIdSpace: (userId: string) => {
+                this.emitMuteParticipantIdSpace(userId);
+            },
+            emitMuteVideoEveryBodySpace: () => {
+                this.emitMuteVideoEveryBodySpace(user.id.toString());
+            },
+            emitMuteVideoParticipantIdSpace: (userId: string) => {
+                this.emitMuteVideoParticipantIdSpace(userId);
+            },
+        };
 
         return {
             ...user,
@@ -177,13 +155,111 @@ export class SpaceFilter implements SpaceFilterInterface {
             spaceName,
         };
     }
+    private removeSpaceFilter(spaceFilter: SpaceFilterMessage) {
+        this.sender({
+            message: {
+                $case: "removeSpaceFilterMessage",
+                removeSpaceFilterMessage: {
+                    spaceFilterMessage: {
+                        filterName: this.name,
+                        spaceName: this.spaceName,
+                    },
+                },
+            },
+        });
+    }
+    private updateSpaceFilter() {
+        this.sender({
+            message: {
+                $case: "updateSpaceFilterMessage",
+                updateSpaceFilterMessage: {
+                    spaceFilterMessage: {
+                        filterName: this.name,
+                        spaceName: this.spaceName,
+                        filter: this.filter,
+                    },
+                },
+            },
+        });
+    }
+    private addSpaceFilter() {
+
+        this.sender({
+            message: {
+                $case: "addSpaceFilterMessage",
+                addSpaceFilterMessage: {
+                    spaceFilterMessage: {
+                        filterName: this.name,
+                        spaceName: this.spaceName,
+                    },
+                },
+            },
+        });
+    }
+    private emitKickOffUserMessage(userId: string) {
+        this.sender({
+            message: {
+                $case: "kickOffUserMessage",
+                kickOffUserMessage: {
+                    userId,
+                    spaceName: this.spaceName,
+                },
+            },
+        });
+    }
+
+    private emitMuteEveryBodySpace(userId: string) {
+        this.sender({
+            message: {
+                $case: "muteEveryBodyParticipantMessage",
+                muteEveryBodyParticipantMessage: {
+                    spaceName: this.spaceName,
+                    senderUserId: userId,
+                },
+            },
+        });
+    }
+
+    private emitMuteVideoEveryBodySpace(userId: string) {
+        this.sender({
+            message: {
+                $case: "muteVideoEveryBodyParticipantMessage",
+                muteVideoEveryBodyParticipantMessage: {
+                    spaceName: this.spaceName,
+                    userId: userId,
+                },
+            },
+        });
+    }
+
+    private emitMuteParticipantIdSpace(userId: string) {
+        this.sender({
+            message: {
+                $case: "muteParticipantIdMessage",
+                muteParticipantIdMessage: {
+                    spaceName: this.spaceName,
+                    mutedUserUuid: userId,
+                },
+            },
+        });
+    }
+
+    private emitMuteVideoParticipantIdSpace(userId: string) {
+        this.sender({
+            message: {
+                $case: "muteVideoParticipantIdMessage",
+                muteVideoParticipantIdMessage: {
+                    spaceName: this.spaceName,
+                    mutedUserUuid: userId,
+                },
+            },
+        });
+    }
 
     destroy() {
-        if (this.spaceFilterEventEmitter)
-            this.spaceFilterEventEmitter.removeSpaceFilter({
+            this.removeSpaceFilter({
                 spaceName: this.spaceName,
                 filterName: this.name,
             });
     }
 }
-

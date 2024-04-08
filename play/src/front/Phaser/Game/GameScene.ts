@@ -151,7 +151,7 @@ import { getCoWebSite, openCoWebSite } from "../../Chat/Utils";
 import { chatConnectionManager } from "../../Chat/Connection/ChatConnectionManager";
 import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 import { WORLD_SPACE_NAME } from "../../Space/Space";
-import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/StreamSpaceWatcher";
+import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/SocketSpaceWatcher";
 import { getMatrixClient } from "../../Matrix/MatrixConnectionManager";
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
 import { gameManager } from "./GameManager";
@@ -190,6 +190,7 @@ import DOMElement = Phaser.GameObjects.DOMElement;
 import Tileset = Phaser.Tilemaps.Tileset;
 import SpriteSheetFile = Phaser.Loader.FileTypes.SpriteSheetFile;
 import FILE_LOAD_ERROR = Phaser.Loader.Events.FILE_LOAD_ERROR;
+
 
 export interface GameSceneInitInterface {
     reconnecting: boolean;
@@ -1524,12 +1525,8 @@ export class GameScene extends DirtyScene {
                     await this.mapEditorModeManager?.updateMapToNewest(commandsToApply);
                 }
 
-                const spaceStream = this.connection.getSpaceStreams();
-                const eventEmitter = this.connection.getSpaceEventEmitter();
-
-
-                const spaceProvider = LocalSpaceProviderSingleton.getInstance(eventEmitter);
-                StreamSpaceWatcherSingleton.getInstance(spaceStream);
+                const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
+                StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);
 
                 spaceProvider.add("worldSpace");
 

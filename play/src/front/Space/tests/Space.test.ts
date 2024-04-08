@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-
-vi.mock("../../Phaser/Entity/CharacterLayerManager", async () => {
+import { UnwatchSpaceMessage, WatchSpaceMessage } from "@workadventure/messages";
+vi.mock("../../Phaser/Entity/CharacterLayerManager", () => {
     return {
         wokaBase64(): Promise<string> {
             return Promise.resolve("");
@@ -10,111 +10,135 @@ vi.mock("../../Phaser/Entity/CharacterLayerManager", async () => {
 
 import { Space } from "../Space";
 import { SpaceFilterAlreadyExistError, SpaceNameIsEmptyError } from "../Errors/SpaceError";
-import { SpaceInterface } from "../SpaceInterface";
-import { SpaceEventEmitterInterface } from "../SpaceEventEmitter/SpaceEventEmitterInterface";
 import { SpaceFilterInterface } from "../SpaceFilter/SpaceFilter";
-import { AllSapceEventEmitter } from "../SpaceProvider/SpaceStore";
+
 
 describe("Space test", () => {
     it("should return a error when pass a empty string as spaceName", () => {
         const spaceName = "";
         const metadata = new Map<string, unknown>();
-        const spaceEventEmitter: SpaceEventEmitterInterface = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
         expect(() => {
-            new Space(spaceName, metadata, spaceEventEmitter);
+            new Space(spaceName, metadata, mockSocket);
         }).toThrow(SpaceNameIsEmptyError);
     });
     it("should not return a error when pass a string as spaceName", () => {
         const spaceName = "space-name";
         const metadata = new Map<string, unknown>();
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
-        let space: SpaceInterface;
-        expect(() => {
-            space = new Space(spaceName, metadata, spaceEventEmitter);
-        }).not.toThrow(SpaceNameIsEmptyError);
 
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => new Uint8Array(),
+                };
+            }),
+        };
+        const space = new Space(spaceName, metadata, mockSocket, mockEncoder);
         expect(space.getName()).toBe(spaceName);
     });
     it("should emit joinSpace event when you create the space", () => {
         const spaceName = "space-name";
         const metadata = new Map<string, unknown>();
-
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
-        new Space(spaceName, metadata, spaceEventEmitter);
 
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.userJoinSpace).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.userJoinSpace).toHaveBeenCalledWith(spaceName);
-    });
-    it.skip("should emit updateMeta event when you update the space", () => {
-        const spaceName = "space-name";
-        const metadata = new Map<string, unknown>();
-
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
         };
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
 
-        space.setMetadata(metadata);
+        const message = {
+            message: {
+                $case: "watchSpaceMessage",
+                watchSpaceMessage: WatchSpaceMessage.fromPartial({
+                    spaceName: spaceName,
+                    spaceFilter: {
+                        filterName: "",
+                        spaceName: spaceName,
+                        filter: undefined,
+                    },
+                }),
+            },
+        };
+        new Space(spaceName, metadata, mockSocket, mockEncoder);
+
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.updateSpaceMetadata).toHaveBeenCalledOnce();
+        expect(mockSocket.send).toHaveBeenCalledOnce();
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.updateSpaceMetadata).toHaveBeenCalledWith(spaceName, metadata);
+        expect(mockSocket.send).toHaveBeenCalledWith(message);
+
+        expect(mockEncoder.encode).toHaveBeenCalledOnce();
+
+        expect(mockEncoder.encode).toHaveBeenCalledWith(message);
     });
+
     it("should emit leaveSpace event when you call destroy", () => {
         const spaceName = "space-name";
         const metadata = new Map<string, unknown>();
 
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
+
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+        const message = {
+            message: {
+                $case: "unwatchSpaceMessage",
+                unwatchSpaceMessage: UnwatchSpaceMessage.fromPartial({
+                    spaceName: spaceName,
+                }),
+            },
+        };
+        const space = new Space(spaceName, metadata, mockSocket, mockEncoder);
 
         space.destroy();
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.userLeaveSpace).toHaveBeenCalledOnce();
+        expect(mockSocket.send).toHaveBeenCalledTimes(2);
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceEventEmitter.userLeaveSpace).toHaveBeenCalledWith(spaceName);
+        expect(mockSocket.send).toHaveBeenLastCalledWith(message);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockEncoder.encode).toHaveBeenCalledTimes(2);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockEncoder.encode).toHaveBeenLastCalledWith(message);
     });
     it("should add metadata when key is not in metadata map", () => {
         const spaceName = "space-name";
         const metadata = new Map<string, unknown>();
-        const spaceEventEmitter: SpaceEventEmitterInterface = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
 
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder);
 
         const newMetadata = new Map<string, unknown>([
             ["metadata-1", 0],
@@ -131,16 +155,20 @@ describe("Space test", () => {
     it("should update metadata when key is already in metadata map ", () => {
         const spaceName = "space-name";
         const metadata = new Map<string, unknown>([["metadata-1", 4]]);
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
 
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder);
 
         const newMetadata = new Map<string, unknown>([["metadata-1", 0]]);
 
@@ -154,15 +182,20 @@ describe("Space test", () => {
         const spaceName = "space-name";
 
         const metadata = new Map<string, unknown>([["metadata-1", 4]]);
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
         };
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
+
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder);
 
         const newMetadata = new Map<string, unknown>([
             ["metadata-2", 0],
@@ -177,21 +210,56 @@ describe("Space test", () => {
 
         expect(result).toStrictEqual(newMetadata);
     });
+
+    it("should return a error when spaceName exist", () => {
+        const spaceName = "space-name";
+        const spaceFilterName = "space-filter-name";
+
+        const metadata = new Map<string, unknown>([["metadata-1", 4]]);
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
+        };
+
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+
+        const filter: SpaceFilterInterface = {};
+        const spaceFilterMap = new Map<string, SpaceFilterInterface>([[spaceFilterName, filter]]);
+
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder,spaceFilterMap);
+        
+
+        expect(() => {
+            space.watch(spaceFilterName);
+        }).toThrow(SpaceFilterAlreadyExistError);
+    });
+
     it("should return a spacefilter when spaceName  not exist", () => {
         const spaceName = "space-name";
         const spaceFilterName = "space-filter-name";
 
         const metadata = new Map<string, unknown>([["metadata-1", 4]]);
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: ()=>{},
         };
 
-        const space = new Space(spaceName, metadata, spaceEventEmitter);
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
+        };
+
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder);
 
         const spaceFilter = space.watch(spaceFilterName);
         expect(spaceFilter).toBeDefined();
@@ -200,46 +268,27 @@ describe("Space test", () => {
         expect(spaceFilter.getName()).toBe(spaceFilterName);
         expect(spaceFilter.getUsers()).toHaveLength(0);
     });
-    it("should return a error when spaceName exist", () => {
-        const spaceName = "space-name";
-        const spaceFilterName = "space-filter-name";
-
-        const metadata = new Map<string, unknown>([["metadata-1", 4]]);
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
-        };
-
-        const filter: SpaceFilterInterface = {};
-        const spaceFilterMap = new Map<string, SpaceFilterInterface>([[spaceFilterName, filter]]);
-
-        const space = new Space(spaceName, metadata, spaceEventEmitter, spaceFilterMap);
-
-        expect(() => {
-            space.watch(spaceFilterName);
-        }).toThrow(SpaceFilterAlreadyExistError);
-    });
     it("should call filterDestroy when you stop watching filter", () => {
         const spaceName = "space-name";
         const spaceFilterName = "space-filter-name";
         const metadata = new Map<string, unknown>([["metadata-1", 4]]);
-        const spaceEventEmitter: AllSapceEventEmitter = {
-            updateSpaceMetadata: vi.fn(),
-            userLeaveSpace: vi.fn(),
-            userJoinSpace: vi.fn(),
-            addSpaceFilter: vi.fn(),
-            removeSpaceFilter: vi.fn(),
-            updateSpaceFilter: vi.fn(),
+        const mockSocket = {
+            readyState: "CONNECTING",
+            send: vi.fn(),
+        };
+
+        const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
+            encode: vi.fn().mockImplementation((msg) => {
+                return {
+                    finish: () => msg,
+                };
+            }),
         };
         const filter: SpaceFilterInterface = {
             destroy: vi.fn(),
         };
         const spaceFilterMap = new Map<string, SpaceFilterInterface>([[spaceFilterName, filter]]);
-        const space = new Space(spaceName, metadata, spaceEventEmitter, spaceFilterMap);
+        const space = new Space(spaceName, metadata, mockSocket,mockEncoder,spaceFilterMap);
         space.stopWatching(spaceFilterName);
         // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(filter.destroy).toHaveBeenCalledOnce();

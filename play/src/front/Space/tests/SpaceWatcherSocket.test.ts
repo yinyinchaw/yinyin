@@ -1,37 +1,42 @@
-import { describe, vi, expect, it } from "vitest";
-vi.mock("../../Phaser/Entity/CharacterLayerManager", async () => {
+import { describe, vi, expect, it, beforeAll, afterAll } from "vitest";
+import WS from "vitest-websocket-mock";
+
+vi.mock("../../Phaser/Entity/CharacterLayerManager", () => {
     return {
         wokaBase64(): Promise<string> {
             return Promise.resolve("");
         },
     };
 });
-import { Subject } from "rxjs";
 import {
     AddSpaceUserMessage,
     RemoveSpaceUserMessage,
+    ServerToClientMessage,
     UpdateSpaceMetadataMessage,
     UpdateSpaceUserMessage,
 } from "@workadventure/messages";
-import { StreamSpaceWatcher } from "../SpaceWatcher/StreamSpaceWatcher";
-import { SpaceStreams } from "../SpaceWatcher/SpaceStreamsInterface";
+import { SpaceEvent, StreamSpaceWatcher } from "../SpaceWatcher/SocketSpaceWatcher";
 import { SpaceProviderInterface } from "../SpaceProvider/SpacerProviderInterface";
+import { SpaceInterface } from "../SpaceInterface";
+import { SpaceFilterInterface } from "../SpaceFilter/SpaceFilter";
+
+let serverSocket: WS;
+const port = 3333;
 
 describe("StreamSpaceWatcher", () => {
+    beforeAll(() => {
+        serverSocket = new WS(`ws://localhost:${port}`);
+    });
+    afterAll(() => {
+        serverSocket.close();
+    });
     it("should subscribe to all stream when you create StreamSpaceWatcher", () => {
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: {
-                subscribe: vi.fn(),
-            },
-            removeSpaceUserMessage: {
-                subscribe: vi.fn(),
-            },
-            updateSpaceMetadataMessage: {
-                subscribe: vi.fn(),
-            },
-            updateSpaceUserMessage: {
-                subscribe: vi.fn(),
-            },
+        const mockSocket: WebSocket = {
+            addEventListener: vi.fn(),
+        };
+
+        const decoder: { decode: (messageCoded: Uint8Array) => ServerToClientMessage } = {
+            decode: vi.fn(),
         };
 
         const SpaceProvider: SpaceProviderInterface = {
@@ -42,241 +47,280 @@ describe("StreamSpaceWatcher", () => {
             getAll: vi.fn(),
         };
 
-        new StreamSpaceWatcher(SpaceProvider, spaceStream);
+        new StreamSpaceWatcher(SpaceProvider, mockSocket, decoder);
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceStream.addSpaceUserMessage.subscribe).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceStream.removeSpaceUserMessage.subscribe).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceStream.updateSpaceMetadataMessage.subscribe).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(spaceStream.updateSpaceUserMessage.subscribe).toHaveBeenCalledOnce();
+        expect(mockSocket.addEventListener).toHaveBeenCalledOnce();
+        expect(mockSocket.addEventListener.mock.calls[0][0]).toBe("message");
     });
-    it("should call addUserToSpace when stream addSpaceUserMessage receive a new message", () => {
-        const addSpaceUserMessage = new Subject<AddSpaceUserMessage>();
-        const updateSpaceUserMessage = new Subject<UpdateSpaceUserMessage>();
-        const removeSpaceUserMessage = new Subject<RemoveSpaceUserMessage>();
-        const updateSpaceMetadataMessage = new Subject<UpdateSpaceMetadataMessage>();
+    it("should call addUserToSpace when stream addSpaceUserMessage receive a new message", async () => {
+        const mockSocket = new WebSocket(`ws://localhost:${port}`);
 
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: addSpaceUserMessage.asObservable(),
-            updateSpaceUserMessage: updateSpaceUserMessage.asObservable(),
-            removeSpaceUserMessage: removeSpaceUserMessage.asObservable(),
-            updateSpaceMetadataMessage: updateSpaceMetadataMessage.asObservable(),
+        await serverSocket.connected;
+
+        const addSpaceUserMessage: AddSpaceUserMessage = {
+            spaceName: "space-name",
+            filterName: "filter-name",
+            user: {
+                id: 1,
+            },
         };
 
-        const addUserWatcher = vi.fn();
+        const message: MessageEvent = {
+            data: {
+                message: {
+                    $case: "batchMessage",
+                    batchMessage: {
+                        payload: [
+                            {
+                                message: {
+                                    $case: SpaceEvent.AddSpaceUser,
+                                    addSpaceUserMessage,
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        };
+
+        const decoder: { decode: (messageCoded: Uint8Array) => ServerToClientMessage } = {
+            decode: vi.fn().mockImplementation((obj) => message.data),
+        };
+
+        const mockSpaceFilter: SpaceFilterInterface = {
+            addUser: vi.fn(),
+        };
+        const mockSpace: SpaceInterface = {
+            getSpaceFilter: vi.fn().mockImplementation(() => mockSpaceFilter),
+        };
         const spaceProvider: SpaceProviderInterface = {
             add: vi.fn(),
             delete: vi.fn(),
             exist: vi.fn(),
-            get: () => {
-                return {
-                    getSpaceFilter: () => {
-                        return {
-                            addUser: addUserWatcher,
-                        };
-                    },
-                };
-            },
+            get: vi.fn().mockImplementation(() => mockSpace),
             getAll: vi.fn(),
         };
 
-        const message: AddSpaceUserMessage = {
+        new StreamSpaceWatcher(spaceProvider, mockSocket, decoder);
+
+        serverSocket.send(message);
+
+        expect(decoder.decode).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledWith(addSpaceUserMessage.spaceName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledWith(addSpaceUserMessage.filterName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.addUser).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.addUser).toHaveBeenCalledWith(addSpaceUserMessage.user);
+    });
+    it("should call removeUserToSpace when stream removeSpaceUserMessage receive a new message", async () => {
+        const mockSocket = new WebSocket(`ws://localhost:${port}`);
+
+        await serverSocket.connected;
+
+        const removeSpaceUserMessage: RemoveSpaceUserMessage = {
             spaceName: "space-name",
             filterName: "filter-name",
-            user: {
-                id: 1,
-            },
-        };
-
-        new StreamSpaceWatcher(spaceProvider, spaceStream);
-
-        addSpaceUserMessage.next(message);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(addUserWatcher).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(addUserWatcher).toHaveBeenCalledWith(message.user);
-    });
-    it("should call removeUserToSpace when stream removeSpaceUserMessage receive a new message", () => {
-        const addSpaceUserMessage = new Subject<AddSpaceUserMessage>();
-        const updateSpaceUserMessage = new Subject<UpdateSpaceUserMessage>();
-        const removeSpaceUserMessage = new Subject<RemoveSpaceUserMessage>();
-        const updateSpaceMetadataMessage = new Subject<UpdateSpaceMetadataMessage>();
-
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: addSpaceUserMessage.asObservable(),
-            updateSpaceUserMessage: updateSpaceUserMessage.asObservable(),
-            removeSpaceUserMessage: removeSpaceUserMessage.asObservable(),
-            updateSpaceMetadataMessage: updateSpaceMetadataMessage.asObservable(),
-        };
-
-        const removeUserWatcher = vi.fn();
-        const SpaceProvider: SpaceProviderInterface = {
-            add: vi.fn(),
-            delete: vi.fn(),
-            exist: vi.fn(),
-            get: () => {
-                return {
-                    getSpaceFilter: () => {
-                        return {
-                            removeUser: removeUserWatcher,
-                        };
-                    },
-                };
-            },
-            getAll: vi.fn(),
-        };
-
-        const message: RemoveSpaceUserMessage = {
             userId: 1,
-            spaceName: "space-name",
-            filterName: "filter-name",
         };
 
-        new StreamSpaceWatcher(SpaceProvider, spaceStream);
-        removeSpaceUserMessage.next(message);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(removeUserWatcher).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(removeUserWatcher).toHaveBeenCalledWith(message.userId);
-    });
-    it("should call updateSpaceUserMessage when stream updateSpaceUserMessage receive a new message", () => {
-        const addSpaceUserMessage = new Subject<AddSpaceUserMessage>();
-        const updateSpaceUserMessage = new Subject<UpdateSpaceUserMessage>();
-        const removeSpaceUserMessage = new Subject<RemoveSpaceUserMessage>();
-        const updateSpaceMetadataMessage = new Subject<UpdateSpaceMetadataMessage>();
-
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: addSpaceUserMessage.asObservable(),
-            updateSpaceUserMessage: updateSpaceUserMessage.asObservable(),
-            removeSpaceUserMessage: removeSpaceUserMessage.asObservable(),
-            updateSpaceMetadataMessage: updateSpaceMetadataMessage.asObservable(),
+        const message: MessageEvent = {
+            data: {
+                message: {
+                    $case: "batchMessage",
+                    batchMessage: {
+                        payload: [
+                            {
+                                message: {
+                                    $case: SpaceEvent.RemoveSpaceUser,
+                                    removeSpaceUserMessage,
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
         };
 
-        const updateUserWatcher = vi.fn();
-        const SpaceProvider: SpaceProviderInterface = {
+        const decoder: { decode: (messageCoded: Uint8Array) => ServerToClientMessage } = {
+            decode: vi.fn().mockImplementation((obj) => message.data),
+        };
+
+        const mockSpaceFilter: SpaceFilterInterface = {
+            removeUser: vi.fn(),
+        };
+        const mockSpace: SpaceInterface = {
+            getSpaceFilter: vi.fn().mockImplementation(() => mockSpaceFilter),
+        };
+        const spaceProvider: SpaceProviderInterface = {
             add: vi.fn(),
             delete: vi.fn(),
             exist: vi.fn(),
-            get: () => {
-                return {
-                    getSpaceFilter: () => {
-                        return {
-                            updateUserData: updateUserWatcher,
-                        };
-                    },
-                };
-            },
+            get: vi.fn().mockImplementation(() => mockSpace),
             getAll: vi.fn(),
         };
-        const message: UpdateSpaceUserMessage = {
+
+        new StreamSpaceWatcher(spaceProvider, mockSocket, decoder);
+
+        serverSocket.send(message);
+
+        expect(decoder.decode).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledWith(removeSpaceUserMessage.spaceName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledWith(removeSpaceUserMessage.filterName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.removeUser).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.removeUser).toHaveBeenCalledWith(removeSpaceUserMessage.userId);
+    });
+
+    it("should call updateSpaceUserMessage when stream updateSpaceUserMessage receive a new message", async () => {
+        const mockSocket = new WebSocket(`ws://localhost:${port}`);
+
+        await serverSocket.connected;
+
+        const updateSpaceUserMessage: UpdateSpaceUserMessage = {
+            spaceName: "space-name",
+            filterName: "filter-name",
             user: {
                 id: 1,
             },
+        };
+
+        const message: MessageEvent = {
+            data: {
+                message: {
+                    $case: "batchMessage",
+                    batchMessage: {
+                        payload: [
+                            {
+                                message: {
+                                    $case: SpaceEvent.UpdateSpaceUser,
+                                    updateSpaceUserMessage,
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        };
+
+        const decoder: { decode: (messageCoded: Uint8Array) => ServerToClientMessage } = {
+            decode: vi.fn().mockImplementation((obj) => message.data),
+        };
+
+        const mockSpaceFilter: SpaceFilterInterface = {
+            updateUserData: vi.fn(),
+        };
+        const mockSpace: SpaceInterface = {
+            getSpaceFilter: vi.fn().mockImplementation(() => mockSpaceFilter),
+        };
+        const spaceProvider: SpaceProviderInterface = {
+            add: vi.fn(),
+            delete: vi.fn(),
+            exist: vi.fn(),
+            get: vi.fn().mockImplementation(() => mockSpace),
+            getAll: vi.fn(),
+        };
+
+        new StreamSpaceWatcher(spaceProvider, mockSocket, decoder);
+
+        serverSocket.send(message);
+        serverSocket.close();
+
+        expect(decoder.decode).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledWith(updateSpaceUserMessage.spaceName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.getSpaceFilter).toHaveBeenCalledWith(updateSpaceUserMessage.filterName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.updateUserData).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpaceFilter.updateUserData).toHaveBeenCalledWith(updateSpaceUserMessage.user);
+    });
+    it("should call updateSpaceMetadata when stream updateSpaceMetadata receive a new message", async () => {
+        const port = 3333;
+        const serverSocket = new WS(`ws://localhost:${port}`);
+        const mockSocket = new WebSocket(`ws://localhost:${port}`);
+
+        await serverSocket.connected;
+
+        const updateSpaceMetadataMessage: UpdateSpaceMetadataMessage = {
             spaceName: "space-name",
             filterName: "filter-name",
-        };
-
-        new StreamSpaceWatcher(SpaceProvider, spaceStream);
-
-        updateSpaceUserMessage.next(message);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(updateUserWatcher).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(updateUserWatcher).toHaveBeenCalledWith(message.user);
-    });
-    it("should call updateSpaceMetadata when stream updateSpaceMetadata receive a new message", () => {
-        const addSpaceUserMessage = new Subject<AddSpaceUserMessage>();
-        const updateSpaceUserMessage = new Subject<UpdateSpaceUserMessage>();
-        const removeSpaceUserMessage = new Subject<RemoveSpaceUserMessage>();
-        const updateSpaceMetadataMessage = new Subject<UpdateSpaceMetadataMessage>();
-
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: addSpaceUserMessage.asObservable(),
-            updateSpaceUserMessage: updateSpaceUserMessage.asObservable(),
-            removeSpaceUserMessage: removeSpaceUserMessage.asObservable(),
-            updateSpaceMetadataMessage: updateSpaceMetadataMessage.asObservable(),
-        };
-
-        const updateMetadataWatcher = vi.fn();
-
-        const SpaceProvider: SpaceProviderInterface = {
-            add: vi.fn(),
-            delete: vi.fn(),
-            exist: vi.fn(),
-            get: () => {
-                return {
-                    setMetadata: updateMetadataWatcher,
-                };
-            },
-            getAll: vi.fn(),
-        };
-
-        const message: UpdateSpaceMetadataMessage = {
             metadata: JSON.stringify({
-                metadata: "metadata-value",
+                metadata: "test",
             }),
-            spaceName: "space-name",
-            filterName: undefined,
         };
 
-        new StreamSpaceWatcher(SpaceProvider, spaceStream);
-
-        updateSpaceMetadataMessage.next(message);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(updateMetadataWatcher).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-
-        const expectedParamMap = new Map([["metadata", "metadata-value"]]);
-        expect(updateMetadataWatcher).toHaveBeenCalledWith(expectedParamMap);
-    });
-    it("should call unsubscribe of all subscription ", () => {
-        const unsubscribeWatcher = vi.fn();
-
-        const spaceStream: SpaceStreams = {
-            addSpaceUserMessage: {
-                subscribe: () => {
-                    return {
-                        unsubscribe: unsubscribeWatcher,
-                    };
-                },
-            },
-            updateSpaceUserMessage: {
-                subscribe: () => {
-                    return {
-                        unsubscribe: unsubscribeWatcher,
-                    };
-                },
-            },
-            removeSpaceUserMessage: {
-                subscribe: () => {
-                    return {
-                        unsubscribe: unsubscribeWatcher,
-                    };
-                },
-            },
-            updateSpaceMetadataMessage: {
-                subscribe: () => {
-                    return {
-                        unsubscribe: unsubscribeWatcher,
-                    };
+        const message: MessageEvent = {
+            data: {
+                message: {
+                    $case: "batchMessage",
+                    batchMessage: {
+                        payload: [
+                            {
+                                message: {
+                                    $case: SpaceEvent.updateSpaceMetadata,
+                                    updateSpaceMetadataMessage,
+                                },
+                            },
+                        ],
+                    },
                 },
             },
         };
 
-        const SpaceProvider: SpaceProviderInterface = {
+        const decoder: { decode: (messageCoded: Uint8Array) => ServerToClientMessage } = {
+            decode: vi.fn().mockImplementation((obj) => message.data),
+        };
+
+        const mockSpace: SpaceInterface = {
+            setMetadata: vi.fn(),
+        };
+        const spaceProvider: SpaceProviderInterface = {
             add: vi.fn(),
             delete: vi.fn(),
             exist: vi.fn(),
-            get: vi.fn(),
+            get: vi.fn().mockImplementation(() => mockSpace),
             getAll: vi.fn(),
         };
 
-        const streamSpaceWatcher = new StreamSpaceWatcher(SpaceProvider, spaceStream);
-        streamSpaceWatcher.destroy();
+        new StreamSpaceWatcher(spaceProvider, mockSocket, decoder);
 
-        expect(unsubscribeWatcher).toBeCalledTimes(4);
+        serverSocket.send(message);
+
+        expect(decoder.decode).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(spaceProvider.get).toHaveBeenCalledWith(updateSpaceMetadataMessage.spaceName);
+
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.setMetadata).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(mockSpace.setMetadata).toHaveBeenCalledWith(new Map([["metadata", "test"]]));
     });
 });
