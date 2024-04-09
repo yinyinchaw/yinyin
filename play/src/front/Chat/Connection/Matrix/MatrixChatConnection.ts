@@ -1,6 +1,6 @@
 import { ClientEvent, MatrixClient, Room, SyncState, User } from "matrix-js-sdk";
 import { RoomConnection } from "../../../Connection/RoomConnection";
-import { ChatConnection, ChatRoom, ChatUser } from "../ChatConnectionInterface";
+import { ChatConnection, ChatRoom, ChatUser } from "../ChatConnection";
 import { MatrixClientWrapper } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";

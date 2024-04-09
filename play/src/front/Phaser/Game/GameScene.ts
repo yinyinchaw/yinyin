@@ -151,6 +151,9 @@ import { chatConnectionManager } from "../../Chat/Connection/ChatConnectionManag
 import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 import { WORLD_SPACE_NAME } from "../../Space/Space";
 import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/SocketSpaceWatcher";
+import { ChatConnection } from "../../Chat/Connection/ChatConnection";
+import { MatrixChatConnection } from "../../Chat/Connection/Matrix/MatrixChatConnection";
+import { MatrixClientWrapper } from "../../Chat/Connection/Matrix/MatrixClientWrapper";
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
 import { gameManager } from "./GameManager";
 import { EmoteManager } from "./EmoteManager";
@@ -179,9 +182,6 @@ import { EntitiesCollectionsManager } from "./MapEditor/EntitiesCollectionsManag
 import { DEPTH_BUBBLE_CHAT_SPRITE } from "./DepthIndexes";
 import { ScriptingEventsManager } from "./ScriptingEventsManager";
 import { faviconManager } from "./../../WebRtc/FaviconManager";
-import { ChatConnection } from "../../Chat/Connection/ChatConnectionInterface";
-import { MatrixChatConnection } from "../../Chat/Connection/Matrix/MatrixChatConnection";
-import { MatrixClientWrapper } from "../../Chat/Connection/Matrix/MatrixClientWrapper";
 import EVENT_TYPE = Phaser.Scenes.Events;
 import Texture = Phaser.Textures.Texture;
 import Sprite = Phaser.GameObjects.Sprite;
@@ -190,7 +190,6 @@ import DOMElement = Phaser.GameObjects.DOMElement;
 import Tileset = Phaser.Tilemaps.Tileset;
 import SpriteSheetFile = Phaser.Loader.FileTypes.SpriteSheetFile;
 import FILE_LOAD_ERROR = Phaser.Loader.Events.FILE_LOAD_ERROR;
-
 
 export interface GameSceneInitInterface {
     reconnecting: boolean;
@@ -1525,8 +1524,6 @@ export class GameScene extends DirtyScene {
                 if (commandsToApply) {
                     await this.mapEditorModeManager?.updateMapToNewest(commandsToApply);
                 }
-
-
 
                 const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
                 StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);

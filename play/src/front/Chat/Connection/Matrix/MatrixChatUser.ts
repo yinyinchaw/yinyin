@@ -1,6 +1,6 @@
 import { User, UserEvent } from "matrix-js-sdk";
 import merge from "lodash/merge";
-import { ChatUser } from "../ChatConnectionInterface";
+import { ChatUser } from "../ChatConnection";
 
 export class MatrixChatUser implements ChatUser {
     id!: string;

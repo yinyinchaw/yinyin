@@ -1,6 +1,6 @@
 import { Room, RoomEvent } from "matrix-js-sdk";
 import merge from "lodash/merge";
-import { ChatRoom } from "../ChatConnectionInterface";
+import { ChatRoom } from "../ChatConnection";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
