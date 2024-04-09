@@ -37,6 +37,7 @@ const matrixAccessToken = "matrixAccessToken";
 const matrixAccessTokenExpireDate = "matrixAccessTokenExpireDate";
 const matrixRefreshToken = "matrixRefreshToken";
 const matrixDeviceId = "matrixDeviceId";
+const matrixLoginToken = "matrixLoginToken";
 
 const JwtAuthToken = z
     .object({
@@ -501,9 +502,6 @@ class LocalUserStore {
     setLastNotificationPermissionRequest() {
         localStorage.setItem("lastNotificationPermissionRequest", new Date().toString());
     }
-    getMatrixLoginToken(): string | null {
-        return localStorage.getItem(authToken);
-    }
 
     setMatrixUserId(value: string | null) {
         if (value !== null) {
@@ -568,7 +566,18 @@ class LocalUserStore {
     getMatrixDeviceId(userUuid: string): string | null {
         return localStorage.getItem(matrixDeviceId + "_" + userUuid);
     }
+
+    setMatrixLoginToken(value: string | null) {
+        if (value !== null) {
+            localStorage.setItem(matrixLoginToken, value);
+        } else {
+            localStorage.removeItem(matrixLoginToken);
+        }
+    }
+
+    getMatrixLoginToken() {
+        return localStorage.getItem(matrixLoginToken);
+    }
 }
 
 export const localUserStore = new LocalUserStore();
-

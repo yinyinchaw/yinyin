@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/svelte";
-import type { AvailabilityStatus, MemberData } from "@workadventure/messages";
+import type { AvailabilityStatus } from "@workadventure/messages";
 import {
     ErrorApiErrorData,
     ErrorApiRetryData,
@@ -20,7 +20,7 @@ import { gameManager } from "../Phaser/Game/GameManager";
 import { locales } from "../../i18n/i18n-util";
 import type { Locales } from "../../i18n/i18n-types";
 import { setCurrentLocale } from "../../i18n/locales";
-import { noMatrixServerUrl, setMatrixLoginToken, setMatrixServerDetails } from "../Matrix/MatrixConnectionManager";
+import { noMatrixServerUrl } from "../Matrix/MatrixConnectionManager";
 import { axiosToPusher, axiosWithRetry } from "./AxiosUtils";
 import { Room } from "./Room";
 import { LocalUser } from "./LocalUser";
@@ -143,8 +143,7 @@ class ConnectionManager {
         }
 
         if (matrixLoginToken != undefined) {
-            setMatrixLoginToken(matrixLoginToken);
-
+            localUserStore.setMatrixLoginToken(matrixLoginToken);
             //clean token of url
             urlParams.delete("matrixLoginToken");
         }
@@ -347,6 +346,14 @@ class ConnectionManager {
             localUserStore.saveUser(this.localUser);
             localUserStore.setAuthToken(this.authToken);
         }
+        this.anonymousMatrixLogin();
+    }
+
+    private anonymousMatrixLogin() {
+        localUserStore.setMatrixLoginToken(null);
+        localUserStore.setMatrixUserId(null);
+        localUserStore.setMatrixAccessToken(null);
+        localUserStore.setMatrixRefreshToken(null);
     }
 
     public initBenchmark(): void {
@@ -516,11 +523,12 @@ class ConnectionManager {
         localUserStore.saveUser(this.localUser);
         this.authToken = authToken;
 
+        /*
         if (matrixServerUrl) {
-            setMatrixServerDetails(matrixServerUrl,userUuid);
+            setMatrixServerDetails(matrixServerUrl, userUuid);
         } else {
             noMatrixServerUrl();
-        }
+        }*/
 
         if (visitCardUrl) {
             gameManager.setVisitCardUrl(visitCardUrl);

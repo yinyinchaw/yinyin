@@ -20,11 +20,10 @@ import { ITiledMap, ITiledMapLayer, ITiledMapObject, ITiledMapTileset } from "@w
 import {
     ENTITIES_FOLDER_PATH_NO_PREFIX,
     ENTITY_COLLECTION_FILE,
-    EntityPrefabType,
     EntityPermissions,
+    EntityPrefabType,
     GameMap,
     GameMapProperties,
-    isSuccess,
     WAMFileFormat,
 } from "@workadventure/map-editor";
 import { userMessageManager } from "../../Administration/UserMessageManager";
@@ -129,8 +128,8 @@ import {
     mapEditorModeStore,
     mapEditorSelectedToolStore,
     mapEditorWamSettingsEditorToolCurrentMenuItemStore,
-    WAM_SETTINGS_EDITOR_TOOL_MENU_ITEM,
     mapExplorationModeStore,
+    WAM_SETTINGS_EDITOR_TOOL_MENU_ITEM,
 } from "../../Stores/MapEditorStore";
 import { refreshPromptStore } from "../../Stores/RefreshPromptStore";
 import { debugAddPlayer, debugRemovePlayer, debugUpdatePlayer } from "../../Utils/Debuggers";
@@ -152,7 +151,6 @@ import { chatConnectionManager } from "../../Chat/Connection/ChatConnectionManag
 import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 import { WORLD_SPACE_NAME } from "../../Space/Space";
 import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/StreamSpaceWatcher";
-import { getMatrixClient } from "../../Matrix/MatrixConnectionManager";
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
 import { gameManager } from "./GameManager";
 import { EmoteManager } from "./EmoteManager";
@@ -171,7 +169,6 @@ import { ActivatablesManager } from "./ActivatablesManager";
 import type { AddPlayerInterface } from "./AddPlayerInterface";
 import type { CameraManagerEventCameraUpdateData } from "./CameraManager";
 import { CameraManager, CameraManagerEvent } from "./CameraManager";
-
 import { EditorToolName, MapEditorModeManager } from "./MapEditor/MapEditorModeManager";
 import type { PlayerDetailsUpdate } from "./RemotePlayersRepository";
 import { RemotePlayersRepository } from "./RemotePlayersRepository";
@@ -182,6 +179,9 @@ import { EntitiesCollectionsManager } from "./MapEditor/EntitiesCollectionsManag
 import { DEPTH_BUBBLE_CHAT_SPRITE } from "./DepthIndexes";
 import { ScriptingEventsManager } from "./ScriptingEventsManager";
 import { faviconManager } from "./../../WebRtc/FaviconManager";
+import { ChatConnection } from "../../Chat/Connection/ChatConnectionInterface";
+import { MatrixChatConnection } from "../../Chat/Connection/Matrix/MatrixChatConnection";
+import { MatrixClientWrapper } from "../../Chat/Connection/Matrix/MatrixClientWrapper";
 import EVENT_TYPE = Phaser.Scenes.Events;
 import Texture = Phaser.Textures.Texture;
 import Sprite = Phaser.GameObjects.Sprite;
@@ -314,6 +314,7 @@ export class GameScene extends DirtyScene {
         this.currentCompanionTextureResolve = resolve;
         this.currentCompanionTextureReject = reject;
     });
+    public chatConnection!: ChatConnection;
 
     // FIXME: we need to put a "unknown" instead of a "any" and validate the structure of the JSON we are receiving.
 
@@ -523,7 +524,7 @@ export class GameScene extends DirtyScene {
 
     //hook create scene
     create(): void {
-        getMatrixClient()
+        /*getMatrixClient()
             .then(async (clientResult) => {
                 if (isSuccess(clientResult)) {
                     const client = clientResult.value;
@@ -548,7 +549,7 @@ export class GameScene extends DirtyScene {
                     }
                 }
             })
-            .catch((e) => console.error(e));
+            .catch((e) => console.error(e));*/
 
         this.input.topOnly = false;
         this.preloading = false;
@@ -1527,13 +1528,19 @@ export class GameScene extends DirtyScene {
                 const spaceStream = this.connection.getSpaceStreams();
                 const eventEmitter = this.connection.getSpaceEventEmitter();
 
-
                 const spaceProvider = LocalSpaceProviderSingleton.getInstance(eventEmitter);
                 StreamSpaceWatcherSingleton.getInstance(spaceStream);
 
                 spaceProvider.add("worldSpace");
 
                 spaceProvider.add(WORLD_SPACE_NAME);
+                if (this.connection) {
+                    //We need to add an env parameter to switch between chat services
+                    this.chatConnection = new MatrixChatConnection(
+                        this.connection,
+                        new MatrixClientWrapper("http://matrix.workadventure.localhost")
+                    );
+                }
 
                 this.tryOpenMapEditorWithToolEditorParameter();
 
