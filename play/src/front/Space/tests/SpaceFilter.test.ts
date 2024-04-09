@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("../../Phaser/Entity/CharacterLayerManager", async () => {
+vi.mock("../../Phaser/Entity/CharacterLayerManager", () => {
     return {
         wokaBase64(): Promise<string> {
             return Promise.resolve("");
@@ -8,14 +8,9 @@ vi.mock("../../Phaser/Entity/CharacterLayerManager", async () => {
     };
 });
 
-import { SpaceFilterMessage, SpaceUser } from "@workadventure/messages";
+import { SpaceUser } from "@workadventure/messages";
 import { Writable, get, writable } from "svelte/store";
-import {
-    SpaceFilterInterface,
-    SpaceFilter,
-    Filter,
-    SpaceUserExtended,
-} from "../SpaceFilter/SpaceFilter";
+import { SpaceFilterInterface, SpaceFilter, Filter, SpaceUserExtended } from "../SpaceFilter/SpaceFilter";
 
 describe("SpaceFilter", () => {
     describe("userExist", () => {
@@ -49,7 +44,8 @@ describe("SpaceFilter", () => {
                 spaceFilterName,
                 spaceName,
                 undefined,
-                undefined,
+                vi.fn(),
+
                 userMap
             );
 
@@ -64,7 +60,7 @@ describe("SpaceFilter", () => {
                 id: 0,
             };
 
-            const spaceFilter: SpaceFilterInterface = new SpaceFilter(spaceFilterName, spaceName);
+            const spaceFilter: SpaceFilterInterface = new SpaceFilter(spaceFilterName, spaceName, undefined, vi.fn());
 
             const result = spaceFilter.userExist(user.id);
 
@@ -81,7 +77,7 @@ describe("SpaceFilter", () => {
                 id,
             };
 
-            const spaceFilter: SpaceFilterInterface = new SpaceFilter(spaceFilterName, spaceName);
+            const spaceFilter: SpaceFilterInterface = new SpaceFilter(spaceFilterName, spaceName, undefined, vi.fn());
             spaceFilter.addUser(user);
             expect(get(spaceFilter.users).has(user.id)).toBeTruthy();
         });
@@ -107,7 +103,7 @@ describe("SpaceFilter", () => {
                 spaceFilterName,
                 spaceName,
                 undefined,
-                undefined,
+                vi.fn(),
                 userMap
             );
             spaceFilter.addUser(userWithSameID);
@@ -143,7 +139,8 @@ describe("SpaceFilter", () => {
                 spaceFilterName,
                 spaceName,
                 undefined,
-                undefined,
+                vi.fn(),
+
                 userMap
             );
 
@@ -180,7 +177,8 @@ describe("SpaceFilter", () => {
                 spaceFilterName,
                 spaceName,
                 undefined,
-                undefined,
+                vi.fn(),
+
                 userMap
             );
 
@@ -215,7 +213,7 @@ describe("SpaceFilter", () => {
                 spaceFilterName,
                 spaceName,
                 undefined,
-                undefined,
+                vi.fn(),
                 userMap
             );
 
@@ -234,23 +232,27 @@ describe("SpaceFilter", () => {
 
             const userMap: Writable<Map<number, SpaceUserExtended>> = writable(new Map<number, SpaceUserExtended>([]));
 
-            const spaceFilterEventEmitter: SpaceFilterEventEmitterInterface = {
-                addSpaceFilter: vi.fn(),
-                removeSpaceFilter: vi.fn(),
-                updateSpaceFilter: vi.fn(),
-            };
+            const mockSender = vi.fn();
 
-            new SpaceFilter(spaceFilterName, spaceName, undefined, spaceFilterEventEmitter, userMap);
+            new SpaceFilter(spaceFilterName, spaceName, undefined, mockSender, userMap);
 
-            const spaceFilterMessage: SpaceFilterMessage = {
-                filterName: spaceFilterName,
-                spaceName,
+            const message = {
+                message: {
+                    $case: "addSpaceFilterMessage",
+                    addSpaceFilterMessage :{
+                        spaceFilterMessage : {
+                        filterName: spaceFilterName,
+                        spaceName,
+                        }
+
+                    }
+                },
             };
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.addSpaceFilter).toHaveBeenCalledOnce();
+            expect(mockSender).toHaveBeenCalledOnce();
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.addSpaceFilter).toHaveBeenCalledWith(spaceFilterMessage);
+            expect(mockSender).toHaveBeenCalledWith(message);
         });
 
         it("emit removeSpaceFilter event when you create spaceFilter", () => {
@@ -259,30 +261,34 @@ describe("SpaceFilter", () => {
 
             const userMap: Writable<Map<number, SpaceUserExtended>> = writable(new Map<number, SpaceUserExtended>([]));
 
-            const spaceFilterEventEmitter: SpaceFilterEventEmitterInterface = {
-                addSpaceFilter: vi.fn(),
-                removeSpaceFilter: vi.fn(),
-                updateSpaceFilter: vi.fn(),
-            };
-
+            const mockSender = vi.fn();
             const spaceFilter = new SpaceFilter(
                 spaceFilterName,
                 spaceName,
                 undefined,
-                spaceFilterEventEmitter,
+                mockSender,
                 userMap
             );
             spaceFilter.destroy();
 
-            const spaceFilterMessage: SpaceFilterMessage = {
-                filterName: spaceFilterName,
-                spaceName,
+            const message = {
+                message: {
+                    $case: "removeSpaceFilterMessage",
+                    removeSpaceFilterMessage :{
+                        spaceFilterMessage : {
+                        filterName: spaceFilterName,
+                        spaceName,
+                        }
+
+                    }
+                },
             };
 
+
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.removeSpaceFilter).toHaveBeenCalledOnce();
+            expect(mockSender).toHaveBeenCalledTimes(2);
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.removeSpaceFilter).toHaveBeenCalledWith(spaceFilterMessage);
+            expect(mockSender).toHaveBeenLastCalledWith(message);
         });
         it("emit updateSpaceFilter event when you update spaceFilter", () => {
             const spaceFilterName = "space-filter-name";
@@ -290,37 +296,41 @@ describe("SpaceFilter", () => {
 
             const userMap: Writable<Map<number, SpaceUserExtended>> = writable(new Map<number, SpaceUserExtended>([]));
 
-            const spaceFilterEventEmitter: SpaceFilterEventEmitterInterface = {
-                addSpaceFilter: vi.fn(),
-                removeSpaceFilter: vi.fn(),
-                updateSpaceFilter: vi.fn(),
-            };
 
             const newFilter: Filter = {
                 $case: "spaceFilterEverybody",
                 spaceFilterEverybody: {},
             };
 
+            const mockSender = vi.fn();
             const spaceFilter = new SpaceFilter(
                 spaceFilterName,
                 spaceName,
                 undefined,
-                spaceFilterEventEmitter,
+                mockSender,
                 userMap
             );
 
             spaceFilter.setFilter(newFilter);
 
-            const spaceFilterMessage: SpaceFilterMessage = {
-                filterName: spaceFilterName,
-                spaceName,
-                filter: newFilter,
+            const message = {
+                message: {
+                    $case: "updateSpaceFilterMessage",
+                    updateSpaceFilterMessage :{
+                        spaceFilterMessage : {
+                        filterName: spaceFilterName,
+                        spaceName,
+                        filter:newFilter
+                        }
+
+                    }
+                },
             };
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.updateSpaceFilter).toHaveBeenCalledOnce();
+            expect(mockSender).toHaveBeenCalledTimes(2);
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(spaceFilterEventEmitter.updateSpaceFilter).toHaveBeenCalledWith(spaceFilterMessage);
+            expect(mockSender).toHaveBeenLastCalledWith(message);
         });
     });
 });

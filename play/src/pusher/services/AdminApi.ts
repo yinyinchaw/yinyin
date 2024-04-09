@@ -363,7 +363,8 @@ class AdminApi implements AdminInterface {
         characterTextureIds: string[],
         companionTextureId?: string,
         locale?: string,
-        tags?: string[]
+        tags?: string[],
+        chatID? : string
     ): Promise<FetchMemberDataByUuidResponse> {
         try {
             /**
@@ -428,7 +429,8 @@ class AdminApi implements AdminInterface {
                     characterTextureIds,
                     companionTextureId,
                     accessToken,
-                    isLogged: accessToken ? "1" : "0", // deprecated, use accessToken instead
+                    isLogged: accessToken ? "1" : "0", // deprecated, use accessToken instead,
+                    chatID
                 },
                 headers: { Authorization: `${ADMIN_API_TOKEN}`, "Accept-Language": locale ?? "en" },
             });

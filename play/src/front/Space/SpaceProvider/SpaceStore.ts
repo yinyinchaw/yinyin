@@ -1,3 +1,4 @@
+import { ClientToServerMessage } from "@workadventure/messages";
 import { SpaceInterface } from "../SpaceInterface";
 import { SpaceAlreadyExistError, SpaceDoesNotExistError } from "../Errors/SpaceError";
 import { Space } from "../Space";
@@ -7,18 +8,19 @@ import {
 } from "../SpaceEventEmitter/SpaceEventEmitterInterface";
 import { SpaceProviderInterface } from "./SpacerProviderInterface";
 
+
 export type AllSapceEventEmitter = (SpaceFilterEventEmitterInterface & SpaceEventEmitterInterface) | undefined;
 export class LocalSpaceProvider implements SpaceProviderInterface {
     constructor(
-        private allSpaceEventEmitter: AllSapceEventEmitter = undefined,
+        private socket: WebSocket | undefined = undefined,
         private spaces: Map<string, SpaceInterface> = new Map<string, SpaceInterface>()
-    ) {
+    ) { 
     
     }
 
     add(spaceName: string, metadata: Map<string, unknown> = new Map<string, unknown>()): SpaceInterface {
         if (this.exist(spaceName)) throw new SpaceAlreadyExistError(spaceName);
-        const newSpace: SpaceInterface = new Space(spaceName, metadata, this.allSpaceEventEmitter);
+        const newSpace: SpaceInterface = new Space(spaceName, metadata, this.socket,ClientToServerMessage);
         this.spaces.set(newSpace.getName(), newSpace);
         return newSpace;
     }
@@ -42,10 +44,10 @@ export class LocalSpaceProvider implements SpaceProviderInterface {
 }
 
 export class LocalSpaceProviderSingleton {
-    private static instance: LocalSpaceProvider | null = null;
-    static getInstance(spaceEventEmitter: AllSapceEventEmitter = undefined): LocalSpaceProvider {
-        if (this.instance === null) {
-            this.instance = new LocalSpaceProvider(spaceEventEmitter);
+    private static instance: LocalSpaceProvider | undefined = undefined;
+    static getInstance(socket: WebSocket | undefined = undefined): SpaceProviderInterface {
+        if (this.instance === undefined) {
+            this.instance = new LocalSpaceProvider(socket);
         }
         return this.instance;
     }

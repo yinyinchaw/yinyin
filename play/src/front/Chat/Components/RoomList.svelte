@@ -11,8 +11,7 @@
         displayList = !displayList;
     }
 
-    $: chatRooms = chat.chatRooms;
-
+    $: roomList = chat.roomList;
 
 </script>
 
@@ -26,10 +25,14 @@
     Rooms
 </button>
 {#if displayList}
-    {#each $chatRooms as chatRoom (chatRoom.id)}
-        <div class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
+    {#each [...$roomList] as [roomId, room] (roomId)}
+        <div
+            class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
             <IconMessage />
-            <p class="tw-m-0">{chatRoom.name}</p>
+            <p class="tw-m-0">{room.name}</p>
+            {#if room.hasUnreadMessages}
+                <p>UnreadMessage test</p>
+            {/if}
         </div>
     {/each}
 {/if}

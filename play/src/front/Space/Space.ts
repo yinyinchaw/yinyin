@@ -1,66 +1,27 @@
+import { ClientToServerMessage, SpaceFilterMessage, UnwatchSpaceMessage, UpdateSpaceMetadataMessage, WatchSpaceMessage } from "@workadventure/messages";
 import { SpaceInterface } from "./SpaceInterface";
 import { SpaceFilterAlreadyExistError, SpaceFilterDoesNotExistError, SpaceNameIsEmptyError } from "./Errors/SpaceError";
 import { SpaceFilter, SpaceFilterInterface } from "./SpaceFilter/SpaceFilter";
-import {
-    SpaceEventEmitterInterface,
-    SpaceFilterEventEmitterInterface,
-} from "./SpaceEventEmitter/SpaceEventEmitterInterface";
-import { AllSapceEventEmitter } from "./SpaceProvider/SpaceStore";
 
 export const WORLD_SPACE_NAME = "allWorldUser";
 
 export class Space implements SpaceInterface {
     private readonly name: string;
-    private readonly spaceFilterEventEmitter: SpaceFilterEventEmitterInterface | undefined = undefined;
-    private readonly spaceEventEmitter: SpaceEventEmitterInterface | undefined = undefined;
 
     constructor(
         name: string,
         private metadata = new Map<string, unknown>(),
-        allSpaceEventEmitter: AllSapceEventEmitter | undefined = undefined,
-        private filters: Map<string, SpaceFilterInterface> = new Map<string, SpaceFilterInterface>()
+        private socket : WebSocket | undefined = undefined,
+        private encoder: {encode: (messageCoded: ClientToServerMessage) => {finish:()=>Uint8Array}},
+        private filters: Map<string, SpaceFilterInterface> = new Map<string, SpaceFilterInterface>(),
+      
     ) {
         if (name === "") throw new SpaceNameIsEmptyError();
         this.name = name;
 
-        if (!allSpaceEventEmitter) return;
-        const {
-            userJoinSpace,
-            userLeaveSpace,
-            updateSpaceMetadata,
-            addSpaceFilter,
-            removeSpaceFilter,
-            updateSpaceFilter,
-            emitJitsiParticipantId,
-            emitKickOffUserMessage,
-            emitMuteEveryBodySpace,
-            emitMuteParticipantIdSpace,
-            emitMuteVideoEveryBodySpace,
-            emitMuteVideoParticipantIdSpace,
-        } = allSpaceEventEmitter;
-
-        this.spaceEventEmitter = {
-            userJoinSpace,
-            userLeaveSpace,
-            updateSpaceMetadata,
-            emitJitsiParticipantId,
-        };
-        this.spaceFilterEventEmitter = {
-            addSpaceFilter,
-            removeSpaceFilter,
-            updateSpaceFilter,
-            emitKickOffUserMessage,
-            emitMuteEveryBodySpace,
-            emitMuteParticipantIdSpace,
-            emitMuteVideoEveryBodySpace,
-            emitMuteVideoParticipantIdSpace,
-        };
-        this.spaceEventEmitter?.userJoinSpace(this.name);
+        this.userJoinSpace();
     }
 
-    emitJitsiParticipantId(participantId: string): void {
-        this.spaceEventEmitter?.emitJitsiParticipantId(this.name, participantId);
-    }
     getName(): string {
         return this.name;
     }
@@ -79,7 +40,7 @@ export class Space implements SpaceInterface {
             filterName,
             this.name,
             undefined,
-            this.spaceFilterEventEmitter
+            (message : ClientToServerMessage)=>{this.send(message)}
         );
         this.filters.set(newFilter.getName(), newFilter);
         return newFilter;
@@ -103,7 +64,72 @@ export class Space implements SpaceInterface {
         this.filters.delete(filterName);
     }
 
+    private userLeaveSpace(){
+        this.send({
+            message: {
+                $case: "unwatchSpaceMessage",
+                unwatchSpaceMessage: UnwatchSpaceMessage.fromPartial({
+                    spaceName : this.name,
+                }),
+            },
+        });
+    }
+
+    private userJoinSpace(){
+        const spaceFilter: SpaceFilterMessage = {
+            filterName: "",
+            spaceName : this.name,
+            filter: undefined,
+        };
+        this.send({
+            message: {
+                $case: "watchSpaceMessage",
+                watchSpaceMessage: WatchSpaceMessage.fromPartial({
+                    spaceName : this.name,
+                    spaceFilter,
+                }),
+            },
+        });
+    
+    }
+
+    private updateSpaceMetadata(metadata: Map<string, unknown>){
+        const metadataMap = Object.fromEntries(metadata);
+        this.send({
+            message: {
+                $case: "updateSpaceMetadataMessage",
+                updateSpaceMetadataMessage: UpdateSpaceMetadataMessage.fromPartial({
+                    spaceName : this.name,
+                    metadata: JSON.stringify(metadataMap),
+                }),
+            },
+        });
+    }
+
+    emitJitsiParticipantId(participantId: string){
+        this.send({
+            message: {
+                $case: "jitsiParticipantIdSpaceMessage",
+                jitsiParticipantIdSpaceMessage: {
+                    spaceName : this.name,
+                    value: participantId,
+                },
+            },
+        });
+    }
+
+    private send(message : ClientToServerMessage): void {
+        const bytes = this.encoder.encode(message).finish();
+        if(!this.socket)return;
+        if (this.socket.readyState === WebSocket.CLOSING || this.socket.readyState === WebSocket.CLOSED) {
+            console.warn("Trying to send a message to the server, but the connection is closed. Message: ", message);
+            return;
+        }
+
+        this.socket.send(bytes);
+    }
+
     destroy() {
-        if (this.spaceEventEmitter) this.spaceEventEmitter.userLeaveSpace(this.name);
+        if (this.socket) this.userLeaveSpace();
     }
 }

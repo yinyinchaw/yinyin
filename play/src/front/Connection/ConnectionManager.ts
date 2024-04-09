@@ -490,6 +490,7 @@ class ConnectionManager {
                     playUri,
                     localStorageCharacterTextureIds: localUserStore.getCharacterTextures() ?? undefined,
                     localStorageCompanionTextureId: localUserStore.getCompanionTextureId() ?? undefined,
+                    chatID: localUserStore.getChatId() ?? undefined,
                 },
             })
             .then((res) => {
@@ -525,7 +526,7 @@ class ConnectionManager {
 
         /*
         if (matrixServerUrl) {
-            setMatrixServerDetails(matrixServerUrl, userUuid);
+            setMatrixServerDetails(matrixServerUrl);
         } else {
             noMatrixServerUrl();
         }*/

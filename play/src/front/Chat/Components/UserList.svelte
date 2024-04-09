@@ -10,7 +10,7 @@
     function toggleDisplayList() {
         displayList = !displayList;
     }
-    $: chatMembers = chat.chatMembers;
+    $: userList = chat.userList;
 
 </script>
 
@@ -24,10 +24,10 @@
     Users
 </button>
 {#if displayList}
-    {#each $chatMembers as chatMember (chatMember.id)}
+    {#each [...$userList] as [userId,user] (userId)}
         <div class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
-            <IconUserCircle color={chatMember.presence === "offline" ? "red" : "green"} />
-            <p class="tw-m-0">{chatMember.username} ({chatMember.presence})</p>
+            <IconUserCircle color={user.presence === "offline" ? "red" : "green"} />
+            <p class="tw-m-0">{user.username} ({user.presence})</p>
         </div>
     {/each}
 {/if}

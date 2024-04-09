@@ -22,8 +22,8 @@ export class MatrixChatConnection extends ChatConnection {
             switch (state) {
                 case SyncState.Prepared:
                     this.connectionStatus.set("ONLINE");
-                    this.handleChatRoomsChanges(this.mapToRoomList());
-                    this.handleChatConnectedUsersChanges(this.mapToUserList());
+                    this.initChatRoomList(this.mapToRoomList());
+                    this.initChatUserList(this.mapToUserList());
                     break;
                 case SyncState.Error:
                     this.connectionStatus.set("ON_ERROR");
@@ -40,22 +40,34 @@ export class MatrixChatConnection extends ChatConnection {
         await this.client.startClient();
     }
 
-    private mapToRoomList(): ChatRoom[] {
-        return this.client.getRooms().map((room: Room) => new MatrixChatRoom(room));
+    private mapToRoomList(): Map<string, ChatRoom> {
+        const roomList = this.client
+            .getRooms()
+            .map((room: Room) => new MatrixChatRoom(room, (room) => this.handleChatRoomChanges(room)));
+        return new Map(roomList.map((room) => [room.id, room]));
     }
 
-    private mapToUserList(): ChatUser[] {
-        return this.client
+    private mapToUserList(): Map<string, ChatUser> {
+        const filteredChatUser = this.client
             .getUsers()
             .filter((user) => user.userId !== this.client.getUserId())
-            .map((user: User) => new MatrixChatUser(user));
+            .map((user: User) => new MatrixChatUser(user, (user) => this.handleChatUserChanges(user)));
+        return new Map(filteredChatUser.map((user) => [user.id, user]));
     }
 
-    handleChatConnectedUsersChanges(users: ChatUser[]) {
-        super.handleChatConnectedUsersChanges(users);
+    initChatRoomList(rooms: Map<string, ChatRoom>) {
+        super.initChatRoomList(rooms);
     }
 
-    handleChatRoomsChanges(rooms: ChatRoom[]) {
-        super.handleChatRoomsChanges(rooms);
+    initChatUserList(users: Map<string, ChatUser>) {
+        super.initChatUserList(users);
+    }
+
+    handleChatUserChanges(user: ChatUser) {
+        super.handleChatUserChanges(user);
+    }
+
+    handleChatRoomChanges(room: ChatRoom) {
+        super.handleChatRoomChanges(room);
     }
 }
