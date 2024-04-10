@@ -45,6 +45,7 @@ import {
     MAX_PER_GROUP,
     POSITION_DELAY,
     PUBLIC_MAP_STORAGE_PREFIX,
+    MATRIX_PUBLIC_URI,
 } from "../../Enum/EnvironmentVariable";
 import { Room } from "../../Connection/Room";
 import { CharacterTextureError } from "../../Exception/CharacterTextureError";
@@ -1534,7 +1535,7 @@ export class GameScene extends DirtyScene {
                     //We need to add an env parameter to switch between chat services
                     this.chatConnection = new MatrixChatConnection(
                         this.connection,
-                        new MatrixClientWrapper("http://matrix.workadventure.localhost")
+                        new MatrixClientWrapper(MATRIX_PUBLIC_URI)
                     );
                 }
 

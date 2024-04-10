@@ -113,7 +113,7 @@ export const GOOGLE_DRIVE_PICKER_APP_ID = env.GOOGLE_DRIVE_PICKER_APP_ID;
 // Matrix
 export const MATRIX_DOMAIN: string = env.MATRIX_DOMAIN || "";
 export const MATRIX_PUBLIC_URI: string | undefined = env.MATRIX_PUBLIC_URI;
-export const MATRIX_API_URI: string = env.MATRIX_API_URI || "";
+export const MATRIX_API_URI: string | undefined = env.MATRIX_API_URI;
 
 // Front container:
 export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
@@ -174,4 +174,5 @@ export const FRONT_ENVIRONMENT_VARIABLES: FrontConfigurationInterface = {
     EMBEDLY_KEY: env.EMBEDLY_KEY,
     EJABBERD_DOMAIN: env.EJABBERD_DOMAIN,
     EJABBERD_WS_URI: env.EJABBERD_WS_URI,
+    MATRIX_PUBLIC_URI 
 };
