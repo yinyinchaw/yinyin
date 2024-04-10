@@ -1,6 +1,7 @@
 import { Room, RoomEvent } from "matrix-js-sdk";
 import merge from "lodash/merge";
 import { ChatRoom } from "../ChatConnection";
+import { chatEventsEngineInstance } from "../../Event/ChatEventsEngine";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -8,15 +9,15 @@ export class MatrixChatRoom implements ChatRoom {
     type!: string;
     hasUnreadMessages: boolean | undefined;
 
-    constructor(private matrixRoom: Room, private handleRoomEvent: (room: ChatRoom) => void) {
+    constructor(private matrixRoom: Room, private chatEventsEngine = chatEventsEngineInstance) {
         merge(this, this.mapMatrixRoomToChatRoom(matrixRoom));
         this.startHandlingChatRoomEvents();
     }
 
     startHandlingChatRoomEvents() {
-        this.matrixRoom.on(RoomEvent.Receipt, (event, room) => {
+        this.matrixRoom.on(RoomEvent.Receipt, (_, room) => {
             console.debug("Room receipt : ", room);
-            this.handleRoomEvent(this.mapMatrixRoomToChatRoom(room));
+            this.chatEventsEngine.emitRoomUpdateEvent(this.mapMatrixRoomToChatRoom(room));
         });
     }
 

@@ -1,7 +1,9 @@
 import { ChatMemberData } from "@workadventure/messages";
 import { writable, Writable } from "svelte/store";
 import merge from "lodash/merge";
+import { Subscription } from "rxjs";
 import { RoomConnection } from "../../Connection/RoomConnection";
+import { ChatEventsEngine, chatEventsEngineInstance } from "../Event/ChatEventsEngine";
 
 export interface ChatUser {
     id: string;
@@ -23,17 +25,31 @@ export interface ChatConnectionInterface {
     getWorldChatMembers(searchText?: string): Promise<ChatMemberData[]>;
     initChatUserList: (users: Map<string, ChatUser>) => void;
     initChatRoomList: (rooms: Map<string, ChatRoom>) => void;
-    handleChatUserChanges: (user: ChatUser) => void;
-    handleChatRoomChanges: (room: ChatRoom) => void;
 }
 
 export abstract class ChatConnection implements ChatConnectionInterface {
     public connectionStatus: Writable<ConnectionStatus> = writable("OFFLINE");
     public userList: Writable<Map<string, ChatUser>> = writable(new Map());
     public roomList: Writable<Map<string, ChatRoom>> = writable(new Map());
-    protected constructor(private readonly connection: RoomConnection) {
+    private subscriptionsToChatEvents: Subscription[] = [];
+
+    protected constructor(
+        private readonly connection: RoomConnection,
+        private chatEventsEngine: ChatEventsEngine = chatEventsEngineInstance
+    ) {
         this.connectionStatus.set("CONNECTING");
+        this.subscribeToChatEvents();
     }
+
+    private subscribeToChatEvents() {
+        this.subscriptionsToChatEvents.push(
+            this.chatEventsEngine.userUpdateMessageStream.subscribe((user) => this.handleChatUserChanges(user))
+        );
+        this.subscriptionsToChatEvents.push(
+            this.chatEventsEngine.roomUpdateMessageStream.subscribe((room) => this.handleChatRoomChanges(room))
+        );
+    }
+
     async getWorldChatMembers(searchText?: string): Promise<ChatMemberData[]> {
         const { members } = await this.connection.queryChatMembers(searchText ?? "");
         return members;
@@ -69,5 +85,9 @@ export abstract class ChatConnection implements ChatConnectionInterface {
             }
             return prevUserList;
         });
+    }
+
+    public destroy(): void {
+        this.subscriptionsToChatEvents.forEach((subscription) => subscription.unsubscribe());
     }
 }

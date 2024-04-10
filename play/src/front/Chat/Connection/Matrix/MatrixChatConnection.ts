@@ -41,9 +41,7 @@ export class MatrixChatConnection extends ChatConnection {
     }
 
     private mapToRoomList(): Map<string, ChatRoom> {
-        const roomList = this.client
-            .getRooms()
-            .map((room: Room) => new MatrixChatRoom(room, (room) => this.handleChatRoomChanges(room)));
+        const roomList = this.client.getRooms().map((room: Room) => new MatrixChatRoom(room));
         return new Map(roomList.map((room) => [room.id, room]));
     }
 
@@ -51,7 +49,7 @@ export class MatrixChatConnection extends ChatConnection {
         const filteredChatUser = this.client
             .getUsers()
             .filter((user) => user.userId !== this.client.getUserId())
-            .map((user: User) => new MatrixChatUser(user, (user) => this.handleChatUserChanges(user)));
+            .map((user: User) => new MatrixChatUser(user));
         return new Map(filteredChatUser.map((user) => [user.id, user]));
     }
 
@@ -61,13 +59,5 @@ export class MatrixChatConnection extends ChatConnection {
 
     initChatUserList(users: Map<string, ChatUser>) {
         super.initChatUserList(users);
-    }
-
-    handleChatUserChanges(user: ChatUser) {
-        super.handleChatUserChanges(user);
-    }
-
-    handleChatRoomChanges(room: ChatRoom) {
-        super.handleChatRoomChanges(room);
     }
 }

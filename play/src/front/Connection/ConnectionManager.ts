@@ -20,7 +20,6 @@ import { gameManager } from "../Phaser/Game/GameManager";
 import { locales } from "../../i18n/i18n-util";
 import type { Locales } from "../../i18n/i18n-types";
 import { setCurrentLocale } from "../../i18n/locales";
-import { noMatrixServerUrl } from "../Matrix/MatrixConnectionManager";
 import { axiosToPusher, axiosWithRetry } from "./AxiosUtils";
 import { Room } from "./Room";
 import { LocalUser } from "./LocalUser";
@@ -497,27 +496,16 @@ class ConnectionManager {
                 return res.data;
             })
             .catch((err) => {
-                noMatrixServerUrl();
                 throw err;
             });
 
         const response = MeResponse.parse(data);
 
         if (response.status === "error") {
-            noMatrixServerUrl();
             return response;
         }
 
-        const {
-            authToken,
-            userUuid,
-            email,
-            username,
-            locale,
-            visitCardUrl,
-            matrixUserId,
-            matrixServerUrl /*, isMatrixRegistered*/,
-        } = response;
+        const { authToken, userUuid, email, username, locale, visitCardUrl, matrixUserId } = response;
 
         localUserStore.setAuthToken(authToken);
         this.localUser = new LocalUser(userUuid, email, matrixUserId /*, isMatrixRegistered*/);
