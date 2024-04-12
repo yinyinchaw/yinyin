@@ -10,6 +10,7 @@ const chat: DeepPartial<Translation["chat"]> = {
     },
     typing: "est en train d'écire...",
     users: "Utilisateurs",
+    chat: "Chat",
     userList: {
         disconnected: "Non connecté",
         isHere: "Sur cette map",
@@ -26,6 +27,8 @@ const chat: DeepPartial<Translation["chat"]> = {
     waitingData: "En attentes des informations de l'utilisateur ...",
     searchUser: "Rechercher un utilisateur, une map, etc ...",
     searchChat: "Rechercher un canal, un message, etc ...",
+    people: "Personnes",
+    rooms: "Salons",
     role: {
         admin: "Administrateur",
         member: "Membre",

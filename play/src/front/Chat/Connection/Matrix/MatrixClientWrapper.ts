@@ -1,7 +1,10 @@
 import { createClient, IndexedDBCryptoStore, IndexedDBStore, MatrixClient } from "matrix-js-sdk";
 import { localUserStore } from "../../../Connection/LocalUserStore";
 
-export class MatrixClientWrapper {
+export interface MatrixClientWrapperInterface {
+    initMatrixClient(): Promise<MatrixClient>;
+}
+export class MatrixClientWrapper implements MatrixClientWrapperInterface {
     constructor(private baseUrl: string) {}
 
     public async initMatrixClient(): Promise<MatrixClient> {

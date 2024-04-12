@@ -1,38 +1,70 @@
 <script lang="ts">
 
-    import { IconChevronDown, IconChevronRight, IconMessage } from "@tabler/icons-svelte";
+    import { IconChevronDown, IconChevronRight, IconSquarePlus } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
+    import LL from "../../../i18n/i18n-svelte";
+    import { selectedRoomId } from "../Stores/ChatStore";
+    import Room from "./Room/Room.svelte";
+    import RoomTimeline from "./Room/RoomTimeline.svelte";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
 
-    let displayList = true;
+    let displayRoomMemberList = true;
+    let displayRoomList = true;
+    let displayAddRoomForm = false;
 
-    function toggleDisplayList() {
-        displayList = !displayList;
+    function toggleDisplayMemberRoomList() {
+        displayRoomMemberList = !displayRoomMemberList;
+    }
+
+    function toggleDisplayRoomList() {
+        displayRoomList = !displayRoomList;
     }
 
     $: roomList = chat.roomList;
 
 </script>
 
-
-<button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayList}>
-    {#if displayList}
-        <IconChevronDown />
-    {:else}
-        <IconChevronRight />
+{#if $selectedRoomId !== undefined}
+    <RoomTimeline room={$roomList.get($selectedRoomId)} />
+{:else}
+    <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayMemberRoomList}>
+        {#if displayRoomMemberList}
+            <IconChevronDown />
+        {:else}
+            <IconChevronRight />
+        {/if}
+        {$LL.chat.people()}
+    </button>
+    {#if displayRoomMemberList}
+        {#each [...$roomList].filter(([_, room]) => room.type === "direct") as [roomId, room] (roomId)}
+            <Room {room} />
+        {/each}
     {/if}
-    Rooms
-</button>
-{#if displayList}
-    {#each [...$roomList] as [roomId, room] (roomId)}
-        <div
-            class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
-            <IconMessage />
-            <p class="tw-m-0">{room.name}</p>
-            {#if room.hasUnreadMessages}
-                <p>UnreadMessage test</p>
+
+    <div class="tw-flex tw-justify-between">
+        <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayRoomList}>
+            {#if displayRoomList}
+                <IconChevronDown />
+            {:else}
+                <IconChevronRight />
             {/if}
-        </div>
-    {/each}
+            {$LL.chat.rooms()}</button>
+        <button class="tw-p-0 tw-m-0 tw-text-gray-400"><IconSquarePlus size={16}/></button>
+    </div>
+
+    {#if displayAddRoomForm}
+
+    {/if}
+
+
+    {#if displayRoomList}
+        {#each [...$roomList].filter(([_, room]) => room.type === "multiple") as [roomId, room] (roomId)}
+            <Room {room} />
+        {/each}
+    {/if}
+
+
 {/if}
+
+

@@ -16,7 +16,6 @@ export class MatrixChatUser implements ChatUser {
     startHandlingChatUserEvent() {
         this.matrixChatUser.on(UserEvent.Presence, (_, user) => {
             console.debug("UserEvent presence : ", user);
-            //emitUserUpdateEvent(this.mapMatrixUserToChatUser(user));
             this.chatEventsEngine.emitUserUpdateEvent(this.mapMatrixUserToChatUser(user));
         });
     }

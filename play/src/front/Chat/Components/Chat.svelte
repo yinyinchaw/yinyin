@@ -1,6 +1,8 @@
 <script lang="ts">
-    import { IconLoader } from "@tabler/icons-svelte";
+    import { IconLoader3 } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
+    import LL from "../../../i18n/i18n-svelte";
+    import { navChat } from "../Stores/ChatStore";
     import UserList from "./UserList.svelte";
     import RoomList from "./RoomList.svelte";
 
@@ -9,12 +11,12 @@
 
 </script>
 
-<div class="tw-flex tw-flex-col tw-gap-2">
+<div class="tw-flex tw-flex-col tw-gap-2 tw-h-screen">
     {#if $chatConnectionStatus === "CONNECTING"}
-        <div class="tw-flex tw-justify-center tw-items-center">
+        <div class="tw-text-gray-400 tw-text-xl tw-flex tw-flex-col tw-items-center tw-mt-20">
+            <IconLoader3 class="tw-animate-spin" size={40} />
             <p class="tw-m-0">
-                <IconLoader class="tw-animate-spin" />
-                Connecting to chat
+                {$LL.chat.connecting()}
             </p>
         </div>
     {/if}
@@ -22,13 +24,31 @@
         <p class="tw-text-red-500">Something went wrong with chat</p>
     {/if}
     {#if $chatConnectionStatus === "ONLINE"}
-        <input class="tw-rounded-xl tw-bg-[#1B2A41] tw-border !tw-border-[#879FC2] tw-text-blue-gray-700 tw-outline tw-outline-0 focus:tw-outline-0 tw-text-white tw-shadow-none"  placeholder="Search"/>
-        <UserList />
-        <RoomList/>
+        <nav class="nav">
+            <div class="background" class:chat={$navChat === "chat"} />
+            <ul>
+                <li class:active={$navChat === "users"} on:click={() => navChat.set("users")}>
+                    {$LL.chat.users()}
+                </li>
+                <li class:active={$navChat === "chat"} on:click={() => navChat.set("chat")}>{$LL.chat.chat()}</li>
+            </ul>
+        </nav>
+        <!-- searchbar -->
+        <div class="tw-border tw-border-transparent tw-border-b-light-purple tw-border-solid">
+            <div class="tw-p-3">
+                <input
+                    class="wa-searchbar tw-block tw-text-white tw-w-full placeholder:tw-text-sm tw-rounded-3xl tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-border-solid tw-bg-transparent"
+                    placeholder={$navChat === "users" ? $LL.chat.searchUser() : $LL.chat.searchChat()}
+                />
+            </div>
+        </div>
+        {#if $navChat === "users"}
+            <UserList />
+        {:else}
+            <RoomList />
+        {/if}
     {/if}
 </div>
 
 <audio id="newMessageSound" src="./static/new-message.mp3" style="width: 0;height: 0;opacity: 0" />
-
-
 

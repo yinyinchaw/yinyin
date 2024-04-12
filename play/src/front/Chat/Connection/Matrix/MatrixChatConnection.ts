@@ -1,14 +1,13 @@
-import { ClientEvent, MatrixClient, Room, SyncState, User } from "matrix-js-sdk";
-import { RoomConnection } from "../../../Connection/RoomConnection";
-import { ChatConnection, ChatRoom, ChatUser } from "../ChatConnection";
-import { MatrixClientWrapper } from "./MatrixClientWrapper";
+import { ClientEvent, MatrixClient, Room, SyncState, User, Visibility } from "matrix-js-sdk";
+import { ChatConnection, ChatRoom, ChatUser, Connection, CreateRoomOptions } from "../ChatConnection";
+import { MatrixClientWrapperInterface } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";
 
 export class MatrixChatConnection extends ChatConnection {
     private client!: MatrixClient;
-    constructor(roomConnection: RoomConnection, matrixClientWrapper: MatrixClientWrapper) {
-        super(roomConnection);
+    constructor(connection: Connection, matrixClientWrapper: MatrixClientWrapperInterface) {
+        super(connection);
         (async () => {
             this.client = await matrixClientWrapper.initMatrixClient();
             await this.startMatrixClient();
@@ -36,6 +35,9 @@ export class MatrixChatConnection extends ChatConnection {
                     break;
             }
         });
+        this.client.on(ClientEvent.Room, (room) => {
+            this.handleChatRoomChanges(new MatrixChatRoom(room));
+        });
         await this.client.store.startup();
         await this.client.startClient();
     }
@@ -59,5 +61,11 @@ export class MatrixChatConnection extends ChatConnection {
 
     initChatUserList(users: Map<string, ChatUser>) {
         super.initChatUserList(users);
+    }
+    async createRoom(roomOptions?: CreateRoomOptions) {
+        return await this.client.createRoom({
+            name: roomOptions?.name,
+            visibility: roomOptions?.visibility as Visibility | undefined,
+        });
     }
 }

@@ -143,6 +143,8 @@ export const showChatZonesStore = writable<boolean>(false);
 export const showForumsStore = writable<boolean>(false);
 export const showTimelineStore = writable<boolean>(false);
 
+export const selectedRoomId = writable<string | undefined>(undefined);
+
 export const loading = derived(
     [connectionEstablishedStore, xmppServerConnectionStatusStore],
     ([$connectionEstablishedStore, $xmppServerConnectionStatusStore]) =>

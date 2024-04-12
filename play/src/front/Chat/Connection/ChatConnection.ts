@@ -2,8 +2,9 @@ import { ChatMemberData } from "@workadventure/messages";
 import { writable, Writable } from "svelte/store";
 import merge from "lodash/merge";
 import { Subscription } from "rxjs";
-import { RoomConnection } from "../../Connection/RoomConnection";
 import { ChatEventsEngine, chatEventsEngineInstance } from "../Event/ChatEventsEngine";
+import { AtLeast } from "@workadventure/map-editor";
+import { RoomConnection } from "../../Connection/RoomConnection";
 
 export interface ChatUser {
     id: string;
@@ -15,8 +16,25 @@ export interface ChatUser {
 export interface ChatRoom {
     id: string;
     name: string;
-    type: string;
+    type: "direct" | "multiple";
     hasUnreadMessages: boolean | undefined;
+    avatarUrl: string | undefined;
+    messages: ChatMessage[];
+    sendMessage: (message: string) => void;
+    setTimelineAsRead: () => void;
+}
+
+export interface ChatMessage {
+    id: string;
+    userId: string;
+    content: string;
+    isMyMessage: boolean;
+    date: Date | null;
+}
+
+export interface CreateRoomOptions {
+    name?: string;
+    visibility?: "private" | "public";
 }
 
 export type ConnectionStatus = "ONLINE" | "ON_ERROR" | "CONNECTING" | "OFFLINE";
@@ -25,7 +43,10 @@ export interface ChatConnectionInterface {
     getWorldChatMembers(searchText?: string): Promise<ChatMemberData[]>;
     initChatUserList: (users: Map<string, ChatUser>) => void;
     initChatRoomList: (rooms: Map<string, ChatRoom>) => void;
+    createRoom: (roomOptions?: CreateRoomOptions) => void;
 }
+
+export type Connection = AtLeast<RoomConnection, "queryChatMembers">;
 
 export abstract class ChatConnection implements ChatConnectionInterface {
     public connectionStatus: Writable<ConnectionStatus> = writable("OFFLINE");
@@ -34,11 +55,15 @@ export abstract class ChatConnection implements ChatConnectionInterface {
     private subscriptionsToChatEvents: Subscription[] = [];
 
     protected constructor(
-        private readonly connection: RoomConnection,
+        private connection: Connection,
         private chatEventsEngine: ChatEventsEngine = chatEventsEngineInstance
     ) {
         this.connectionStatus.set("CONNECTING");
         this.subscribeToChatEvents();
+    }
+
+    createRoom(roomOptions?: CreateRoomOptions) {
+        throw new Error("This method is not implemented");
     }
 
     private subscribeToChatEvents() {

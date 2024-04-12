@@ -9,6 +9,7 @@ const chat: BaseTranslation = {
     },
     typing: "is typing...",
     users: "Users",
+    chat: "Chat",
     userList: {
         disconnected: "Disconnected",
         isHere: "Is on this map",
@@ -25,6 +26,8 @@ const chat: BaseTranslation = {
     waitingData: "Waiting user data ...",
     searchUser: "Search for user, map, etc ...",
     searchChat: "Search for channel, message, etc ...",
+    people: "People",
+    rooms: "Rooms",
     role: {
         admin: "Administrator",
         member: "Member",
