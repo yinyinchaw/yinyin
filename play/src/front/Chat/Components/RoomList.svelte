@@ -3,63 +3,92 @@
     import { IconChevronDown, IconChevronRight, IconSquarePlus } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
-    import { selectedRoomId } from "../Stores/ChatStore";
+    import { selectedRoom } from "../Stores/ChatStore";
     import Room from "./Room/Room.svelte";
     import RoomTimeline from "./Room/RoomTimeline.svelte";
+    import AddRoomForm from "./Room/AddRoomForm.svelte";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
 
-    let displayRoomMemberList = true;
-    let displayRoomList = true;
+    let displayDirectRooms = true;
+    let displayRooms = true;
+    let displayRoomInvitations = true;
     let displayAddRoomForm = false;
 
-    function toggleDisplayMemberRoomList() {
-        displayRoomMemberList = !displayRoomMemberList;
+    function toggleDisplayDirectRooms() {
+        displayDirectRooms = !displayDirectRooms;
     }
 
-    function toggleDisplayRoomList() {
-        displayRoomList = !displayRoomList;
+    function toggleDisplayRooms() {
+        displayRooms = !displayRooms;
     }
 
-    $: roomList = chat.roomList;
+    function toggleDisplayRoomInvitations() {
+        displayRoomInvitations = !displayRoomInvitations;
+    }
+
+    function toggleDisplayAddRoomForm() {
+        displayAddRoomForm = !displayAddRoomForm;
+    }
+
+    let directRooms = chat.directRooms
+    let rooms = chat.rooms
+    let roomInvitations = chat.invitations
+
 
 </script>
 
-{#if $selectedRoomId !== undefined}
-    <RoomTimeline room={$roomList.get($selectedRoomId)} />
+{#if $selectedRoom !== undefined}
+    <RoomTimeline room={$selectedRoom} />
 {:else}
-    <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayMemberRoomList}>
-        {#if displayRoomMemberList}
+    <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayRoomInvitations}>
+        {#if displayRoomInvitations}
+            <IconChevronDown />
+        {:else}
+            <IconChevronRight />
+        {/if}
+        Invitations
+    </button>
+    {#if displayRoomInvitations}
+        {#each $roomInvitations as room (room.id)}
+            <Room {room} />
+        {/each}
+    {/if}
+
+    <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayDirectRooms}>
+        {#if displayDirectRooms}
             <IconChevronDown />
         {:else}
             <IconChevronRight />
         {/if}
         {$LL.chat.people()}
     </button>
-    {#if displayRoomMemberList}
-        {#each [...$roomList].filter(([_, room]) => room.type === "direct") as [roomId, room] (roomId)}
+    {#if displayDirectRooms}
+        {#each $directRooms as room (room.id)}
             <Room {room} />
         {/each}
     {/if}
 
     <div class="tw-flex tw-justify-between">
-        <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayRoomList}>
-            {#if displayRoomList}
+        <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayRooms}>
+            {#if displayRooms}
                 <IconChevronDown />
             {:else}
                 <IconChevronRight />
             {/if}
             {$LL.chat.rooms()}</button>
-        <button class="tw-p-0 tw-m-0 tw-text-gray-400"><IconSquarePlus size={16}/></button>
+        <button class="tw-p-0 tw-m-0 tw-text-gray-400" on:click={toggleDisplayAddRoomForm}>
+            <IconSquarePlus size={16} />
+        </button>
     </div>
 
     {#if displayAddRoomForm}
-
+        <AddRoomForm on:onCreatedRoom={toggleDisplayAddRoomForm} on:onCancelRoomCreation={toggleDisplayAddRoomForm} />
     {/if}
 
 
-    {#if displayRoomList}
-        {#each [...$roomList].filter(([_, room]) => room.type === "multiple") as [roomId, room] (roomId)}
+    {#if displayRooms}
+        {#each $rooms as room (room.id)}
             <Room {room} />
         {/each}
     {/if}

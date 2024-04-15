@@ -25,10 +25,6 @@ describe("MatrixChatConnection tests", () => {
         expect(get(matrixChatConnection.userList)).toEqual(new Map());
     });
 
-    test("Get rooms test", () => {
-        expect(get(matrixChatConnection.roomList)).toEqual(new Map());
-    });
-
     test("Create room with error", async () => {
         matrixClientMock.createRoom = vi.fn().mockRejectedValue("Testing catch error on create room");
         await expect(matrixChatConnection.createRoom({ name: "roomTest", visibility: "public" })).rejects.toEqual(
@@ -48,6 +44,7 @@ describe("MatrixChatConnection tests", () => {
             // @ts-ignore
             listenerOnRoomAddedMock();
             expect(get(matrixChatConnection.roomList)).toHaveLength(1);
+            expect(get(matrixChatConnection.roomList).get("1")?.name).toEqual("roomTest");
         }
     });
 });

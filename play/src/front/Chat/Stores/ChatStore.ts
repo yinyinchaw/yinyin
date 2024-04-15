@@ -8,6 +8,7 @@ import { _newChatMessageSubject } from "../../Stores/ChatStore";
 import { mucRoomsStore, xmppServerConnectionStatusStore } from "./MucRoomsStore";
 import { userStore } from "./LocalUserStore";
 import { activeThreadStore } from "./ActiveThreadStore";
+import { ChatRoom } from "../Connection/ChatConnection";
 
 export interface ChatMessage {
     id: string;
@@ -143,7 +144,7 @@ export const showChatZonesStore = writable<boolean>(false);
 export const showForumsStore = writable<boolean>(false);
 export const showTimelineStore = writable<boolean>(false);
 
-export const selectedRoomId = writable<string | undefined>(undefined);
+export const selectedRoom = writable<ChatRoom | undefined>(undefined);
 
 export const loading = derived(
     [connectionEstablishedStore, xmppServerConnectionStatusStore],

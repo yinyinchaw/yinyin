@@ -1,13 +1,40 @@
-import { ClientEvent, MatrixClient, Room, SyncState, User, Visibility } from "matrix-js-sdk";
-import { ChatConnection, ChatRoom, ChatUser, Connection, CreateRoomOptions } from "../ChatConnection";
+import { ClientEvent, MatrixClient, RoomEvent, SyncState, User, Visibility } from "matrix-js-sdk";
+import { derived, get, Readable, writable, Writable } from "svelte/store";
+import { MapStore } from "@workadventure/store-utils";
+import {
+    ChatConnectionInterface,
+    ChatRoom,
+    ChatUser,
+    Connection,
+    ConnectionStatus,
+    CreateRoomOptions,
+} from "../ChatConnection";
 import { MatrixClientWrapperInterface } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";
 
-export class MatrixChatConnection extends ChatConnection {
+export class MatrixChatConnection implements ChatConnectionInterface {
     private client!: MatrixClient;
+    private roomList: MapStore<string, ChatRoom>;
+    connectionStatus: Writable<ConnectionStatus>;
+    directRooms: Readable<ChatRoom[]>;
+    invitations: Readable<ChatRoom[]>;
+    rooms: Readable<ChatRoom[]>;
+    userList: Writable<Map<string, ChatUser>>;
+
     constructor(connection: Connection, matrixClientWrapper: MatrixClientWrapperInterface) {
-        super(connection);
+        this.connectionStatus = writable("CONNECTING");
+        this.roomList = new MapStore<string, ChatRoom>();
+        this.directRooms = derived(this.roomList, (roomList) => {
+            return Array.from(roomList.values()).filter((room) => !get(room.isInvited) && room.type === "direct");
+        });
+        this.invitations = derived(this.roomList, (roomList) => {
+            return Array.from(roomList.values()).filter((room) => get(room.isInvited));
+        });
+        this.rooms = derived(this.roomList, (roomList) => {
+            return Array.from(roomList.values()).filter((room) => !get(room.isInvited) && room.type === "multiple");
+        });
+        this.userList = writable(new Map());
         (async () => {
             this.client = await matrixClientWrapper.initMatrixClient();
             await this.startMatrixClient();
@@ -21,8 +48,8 @@ export class MatrixChatConnection extends ChatConnection {
             switch (state) {
                 case SyncState.Prepared:
                     this.connectionStatus.set("ONLINE");
-                    this.initChatRoomList(this.mapToRoomList());
-                    this.initChatUserList(this.mapToUserList());
+                    this.userList.set(this.mapToUserList());
+                    this.initRoomList();
                     break;
                 case SyncState.Error:
                     this.connectionStatus.set("ON_ERROR");
@@ -36,15 +63,26 @@ export class MatrixChatConnection extends ChatConnection {
             }
         });
         this.client.on(ClientEvent.Room, (room) => {
-            this.handleChatRoomChanges(new MatrixChatRoom(room));
+            const matrixRoom = new MatrixChatRoom(room);
+            this.roomList.set(matrixRoom.id, matrixRoom);
+        });
+        this.client.on(ClientEvent.DeleteRoom, (roomId) => {
+            this.roomList.delete(roomId);
+        });
+
+        this.client.on(RoomEvent.MyMembership, (room, membership, prevMembership) => {
+            const { roomId } = room;
+            if (membership !== prevMembership) {
+                if (membership === "join") {
+                    this.roomList.set(roomId, new MatrixChatRoom(room));
+                }
+                if (membership === "leave" || membership === "ban") {
+                    this.roomList.delete(roomId);
+                }
+            }
         });
         await this.client.store.startup();
         await this.client.startClient();
-    }
-
-    private mapToRoomList(): Map<string, ChatRoom> {
-        const roomList = this.client.getRooms().map((room: Room) => new MatrixChatRoom(room));
-        return new Map(roomList.map((room) => [room.id, room]));
     }
 
     private mapToUserList(): Map<string, ChatUser> {
@@ -55,17 +93,16 @@ export class MatrixChatConnection extends ChatConnection {
         return new Map(filteredChatUser.map((user) => [user.id, user]));
     }
 
-    initChatRoomList(rooms: Map<string, ChatRoom>) {
-        super.initChatRoomList(rooms);
+    private initRoomList(): void {
+        this.client.getRooms().forEach((room) => this.roomList.set(room.roomId, new MatrixChatRoom(room)));
     }
 
-    initChatUserList(users: Map<string, ChatUser>) {
-        super.initChatUserList(users);
-    }
+    //TODO createOptions only on matrix size
     async createRoom(roomOptions?: CreateRoomOptions) {
         return await this.client.createRoom({
             name: roomOptions?.name,
             visibility: roomOptions?.visibility as Visibility | undefined,
+            room_alias_name: roomOptions?.name,
         });
     }
 }

@@ -1,55 +1,50 @@
 import { MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
-import merge from "lodash/merge";
+import { Writable, writable } from "svelte/store";
 import { ChatMessage, ChatRoom } from "../ChatConnection";
-import { chatEventsEngineInstance } from "../../Event/ChatEventsEngine";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
-    name!: string;
+    name!: Writable<string>;
     type!: "multiple" | "direct";
-    hasUnreadMessages: boolean | undefined;
+    hasUnreadMessages: Writable<boolean>;
     avatarUrl: string | undefined;
-    messages!: ChatMessage[];
+    messages!: Writable<ChatMessage[]>;
+    isInvited!: Writable<boolean>;
 
-    constructor(private matrixRoom: Room, private chatEventsEngine = chatEventsEngineInstance) {
-        merge(this, this.mapMatrixRoomToChatRoom(matrixRoom));
+    constructor(private matrixRoom: Room) {
+        this.id = matrixRoom.roomId;
+        this.name = writable(matrixRoom.name);
+        this.type = matrixRoom.getDMInviter() ? "direct" : "multiple";
+        this.hasUnreadMessages = writable(matrixRoom.getUnreadNotificationCount() > 0);
+        this.avatarUrl = matrixRoom.getAvatarUrl("/", 23, 34, "scale") ?? undefined;
+        this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
+        this.sendMessage = this.sendMessage.bind(this);
+        this.isInvited = writable(matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite"));
         this.startHandlingChatRoomEvents();
     }
 
     startHandlingChatRoomEvents() {
         this.matrixRoom.on(RoomEvent.Timeline, (_, room) => {
             if (room !== undefined) {
-                this.chatEventsEngine.emitRoomUpdateEvent({
-                    ...this,
-                    hasUnreadMessages: room.getUnreadNotificationCount() > 0,
-                    messages: this.mapMatrixRoomMessageToChatMessage(room),
-                });
+                this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);
+                this.messages.set(this.mapMatrixRoomMessageToChatMessage(room));
             }
         });
-    }
-
-    mapMatrixRoomToChatRoom(matrixRoom: Room): ChatRoom {
-        return {
-            id: matrixRoom.roomId,
-            name: matrixRoom.name,
-            type: matrixRoom.getDMInviter() ? "direct" : "multiple",
-            hasUnreadMessages: matrixRoom.getUnreadNotificationCount() > 0,
-            avatarUrl: matrixRoom.getAvatarUrl("/", 23, 34, "scale") ?? undefined,
-            messages: this.mapMatrixRoomMessageToChatMessage(matrixRoom),
-            setTimelineAsRead: this.setTimelineAsRead.bind(this),
-            sendMessage: this.sendMessage.bind(this),
-        };
+        this.matrixRoom.on(RoomEvent.Name, (room) => {
+            this.name.set(room.name);
+        });
     }
 
     private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): ChatMessage[] {
         return matrixRoom
             .getLiveTimeline()
             .getEvents()
+            .filter((event) => event.getType() === "m.room.message")
             .map((event, index) => ({
                 id: event.getId() ?? index.toString(),
                 userId: event.getSender() ?? index.toString(),
                 content: event.getContent().body,
-                isMyMessage: this.matrixRoom.client.getUserId() === event.getSender(),
+                isMyMessage: this.matrixRoom.myUserId === event.getSender(),
                 date: event.getDate(),
             }));
     }
@@ -57,7 +52,7 @@ export class MatrixChatRoom implements ChatRoom {
     setTimelineAsRead() {
         this.matrixRoom.setUnreadNotificationCount(NotificationCountType.Highlight, 0);
         this.matrixRoom.setUnreadNotificationCount(NotificationCountType.Total, 0);
-        this.chatEventsEngine.emitRoomUpdateEvent({ ...this, hasUnreadMessages: 0 });
+        this.hasUnreadMessages.set(false);
         //TODO check doc with liveEvent
         this.matrixRoom.client
             .sendReadReceipt(this.matrixRoom.getLastLiveEvent() ?? null, ReceiptType.Read)

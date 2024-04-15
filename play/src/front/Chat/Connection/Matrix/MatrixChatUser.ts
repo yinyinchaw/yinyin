@@ -1,31 +1,24 @@
 import { User, UserEvent } from "matrix-js-sdk";
-import merge from "lodash/merge";
+import { writable, Writable } from "svelte/store";
 import { ChatUser } from "../ChatConnection";
-import { chatEventsEngineInstance } from "../../Event/ChatEventsEngine";
 
 export class MatrixChatUser implements ChatUser {
     id!: string;
-    presence!: string;
+    presence!: Writable<string>;
     username: string | undefined;
     avatarUrl: string | undefined;
-    constructor(private matrixChatUser: User, private chatEventsEngine = chatEventsEngineInstance) {
-        merge(this, this.mapMatrixUserToChatUser(matrixChatUser));
+
+    constructor(private matrixChatUser: User) {
+        this.id = matrixChatUser.userId;
+        this.username = matrixChatUser.displayName;
+        this.avatarUrl = matrixChatUser.avatarUrl;
+        this.presence = writable(matrixChatUser.presence);
         this.startHandlingChatUserEvent();
     }
 
     startHandlingChatUserEvent() {
         this.matrixChatUser.on(UserEvent.Presence, (_, user) => {
-            console.debug("UserEvent presence : ", user);
-            this.chatEventsEngine.emitUserUpdateEvent(this.mapMatrixUserToChatUser(user));
+            this.presence.set(user.presence);
         });
-    }
-
-    mapMatrixUserToChatUser(matrixUser: User): ChatUser {
-        return {
-            id: matrixUser.userId,
-            username: matrixUser.displayName,
-            avatarUrl: matrixUser.avatarUrl,
-            presence: matrixUser.presence,
-        };
     }
 }

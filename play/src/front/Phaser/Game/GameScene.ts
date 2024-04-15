@@ -42,10 +42,10 @@ import {
     DEBUG_MODE,
     ENABLE_MAP_EDITOR,
     ENABLE_OPENID,
+    MATRIX_PUBLIC_URI,
     MAX_PER_GROUP,
     POSITION_DELAY,
     PUBLIC_MAP_STORAGE_PREFIX,
-    MATRIX_PUBLIC_URI,
 } from "../../Enum/EnvironmentVariable";
 import { Room } from "../../Connection/Room";
 import { CharacterTextureError } from "../../Exception/CharacterTextureError";
@@ -152,7 +152,7 @@ import { chatConnectionManager } from "../../Chat/Connection/ChatConnectionManag
 import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 import { WORLD_SPACE_NAME } from "../../Space/Space";
 import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/SocketSpaceWatcher";
-import { ChatConnection } from "../../Chat/Connection/ChatConnection";
+import { ChatConnectionInterface } from "../../Chat/Connection/ChatConnection";
 import { MatrixChatConnection } from "../../Chat/Connection/Matrix/MatrixChatConnection";
 import { MatrixClientWrapper } from "../../Chat/Connection/Matrix/MatrixClientWrapper";
 import { GameMapFrontWrapper } from "./GameMap/GameMapFrontWrapper";
@@ -315,7 +315,7 @@ export class GameScene extends DirtyScene {
         this.currentCompanionTextureResolve = resolve;
         this.currentCompanionTextureReject = reject;
     });
-    public chatConnection!: ChatConnection;
+    public chatConnection!: ChatConnectionInterface;
 
     // FIXME: we need to put a "unknown" instead of a "any" and validate the structure of the JSON we are receiving.
 
