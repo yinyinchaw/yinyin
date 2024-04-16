@@ -1,5 +1,5 @@
 import { ClientEvent, MatrixClient, RoomEvent, SyncState, User, Visibility } from "matrix-js-sdk";
-import { derived, get, Readable, writable, Writable } from "svelte/store";
+import { derived, Readable, writable, Writable } from "svelte/store";
 import { MapStore } from "@workadventure/store-utils";
 import {
     ChatConnectionInterface,
@@ -15,7 +15,7 @@ import { MatrixChatUser } from "./MatrixChatUser";
 
 export class MatrixChatConnection implements ChatConnectionInterface {
     private client!: MatrixClient;
-    private roomList: MapStore<string, ChatRoom>;
+    private readonly roomList: MapStore<string, MatrixChatRoom>;
     connectionStatus: Writable<ConnectionStatus>;
     directRooms: Readable<ChatRoom[]>;
     invitations: Readable<ChatRoom[]>;
@@ -24,15 +24,15 @@ export class MatrixChatConnection implements ChatConnectionInterface {
 
     constructor(connection: Connection, matrixClientWrapper: MatrixClientWrapperInterface) {
         this.connectionStatus = writable("CONNECTING");
-        this.roomList = new MapStore<string, ChatRoom>();
+        this.roomList = new MapStore<string, MatrixChatRoom>();
         this.directRooms = derived(this.roomList, (roomList) => {
-            return Array.from(roomList.values()).filter((room) => !get(room.isInvited) && room.type === "direct");
+            return Array.from(roomList.values()).filter((room) => !room.isInvited && room.type === "direct");
         });
         this.invitations = derived(this.roomList, (roomList) => {
-            return Array.from(roomList.values()).filter((room) => get(room.isInvited));
+            return Array.from(roomList.values()).filter((room) => room.isInvited);
         });
         this.rooms = derived(this.roomList, (roomList) => {
-            return Array.from(roomList.values()).filter((room) => !get(room.isInvited) && room.type === "multiple");
+            return Array.from(roomList.values()).filter((room) => !room.isInvited && room.type === "multiple");
         });
         this.userList = writable(new Map());
         (async () => {
@@ -70,6 +70,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             this.roomList.delete(roomId);
         });
 
+        // The chat connection is keeping the room list alive, this is why
+        // we register RoomEvent.MyMembership here
         this.client.on(RoomEvent.MyMembership, (room, membership, prevMembership) => {
             const { roomId } = room;
             if (membership !== prevMembership) {

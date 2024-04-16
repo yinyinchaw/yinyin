@@ -9,7 +9,7 @@ export class MatrixChatRoom implements ChatRoom {
     hasUnreadMessages: Writable<boolean>;
     avatarUrl: string | undefined;
     messages!: Writable<ChatMessage[]>;
-    isInvited!: Writable<boolean>;
+    isInvited!: boolean;
 
     constructor(private matrixRoom: Room) {
         this.id = matrixRoom.roomId;
@@ -19,7 +19,7 @@ export class MatrixChatRoom implements ChatRoom {
         this.avatarUrl = matrixRoom.getAvatarUrl("/", 23, 34, "scale") ?? undefined;
         this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
         this.sendMessage = this.sendMessage.bind(this);
-        this.isInvited = writable(matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite"));
+        this.isInvited = matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite");
         this.startHandlingChatRoomEvents();
     }
 
@@ -65,5 +65,13 @@ export class MatrixChatRoom implements ChatRoom {
             .catch((error) => {
                 console.error(error);
             });
+    }
+
+    joinRoom(): void {
+        this.matrixRoom.client.joinRoom(this.id).catch((error) => console.error("Unable to join", error));
+    }
+
+    leaveRoom(): void {
+        this.matrixRoom.client.leave(this.id).catch((error) => console.error("Unable to leave", error));
     }
 }

@@ -17,8 +17,10 @@ export interface ChatRoom {
     avatarUrl: string | undefined;
     messages: Readable<ChatMessage[]>;
     sendMessage: (message: string) => void;
-    isInvited: Readable<boolean>;
+    isInvited: boolean;
     setTimelineAsRead: () => void;
+    leaveRoom: () => void;
+    joinRoom: () => void;
 }
 
 export interface ChatMessage {
