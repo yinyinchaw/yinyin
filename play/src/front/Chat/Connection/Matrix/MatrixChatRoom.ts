@@ -14,7 +14,7 @@ export class MatrixChatRoom implements ChatRoom {
     constructor(private matrixRoom: Room) {
         this.id = matrixRoom.roomId;
         this.name = writable(matrixRoom.name);
-        this.type = matrixRoom.getDMInviter() ? "direct" : "multiple";
+        this.type = this.getMatrixRoomType();
         this.hasUnreadMessages = writable(matrixRoom.getUnreadNotificationCount() > 0);
         this.avatarUrl = matrixRoom.getAvatarUrl("/", 23, 34, "scale") ?? undefined;
         this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
@@ -33,6 +33,16 @@ export class MatrixChatRoom implements ChatRoom {
         this.matrixRoom.on(RoomEvent.Name, (room) => {
             this.name.set(room.name);
         });
+    }
+
+    getMatrixRoomType() {
+        const dmInviter = this.matrixRoom.getDMInviter();
+        if (dmInviter !== undefined) {
+            return "direct";
+        }
+        return this.matrixRoom.getMembers().some((member) => member.getDMInviter() !== undefined)
+            ? "direct"
+            : "multiple";
     }
 
     private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): ChatMessage[] {
