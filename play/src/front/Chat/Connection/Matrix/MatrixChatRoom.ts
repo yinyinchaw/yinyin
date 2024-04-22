@@ -1,6 +1,7 @@
-import { MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
+import { MatrixEvent, MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
 import { Writable, writable } from "svelte/store";
 import { ChatMessage, ChatRoom } from "../ChatConnection";
+import { MatrixChatUser } from "./MatrixChatUser";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -16,7 +17,7 @@ export class MatrixChatRoom implements ChatRoom {
         this.name = writable(matrixRoom.name);
         this.type = this.getMatrixRoomType();
         this.hasUnreadMessages = writable(matrixRoom.getUnreadNotificationCount() > 0);
-        this.avatarUrl = matrixRoom.getAvatarUrl("/", 23, 34, "scale") ?? undefined;
+        this.avatarUrl = matrixRoom.getAvatarUrl(matrixRoom.client.baseUrl, 24, 24, "scale") ?? undefined;
         this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
         this.sendMessage = this.sendMessage.bind(this);
         this.isInvited = matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite");
@@ -52,11 +53,21 @@ export class MatrixChatRoom implements ChatRoom {
             .filter((event) => event.getType() === "m.room.message")
             .map((event, index) => ({
                 id: event.getId() ?? index.toString(),
-                userId: event.getSender() ?? index.toString(),
+                user: this.fetchMessageUser(event, matrixRoom),
                 content: event.getContent().body,
                 isMyMessage: this.matrixRoom.myUserId === event.getSender(),
                 date: event.getDate(),
             }));
+    }
+
+    private fetchMessageUser(event: MatrixEvent, matrixRoom: Room) {
+        let messageUser;
+        const senderUserId = event.getSender();
+        if (senderUserId) {
+            const matrixUser = matrixRoom.client.getUser(senderUserId);
+            messageUser = matrixUser ? new MatrixChatUser(matrixUser, matrixRoom.client) : undefined;
+        }
+        return messageUser;
     }
 
     setTimelineAsRead() {

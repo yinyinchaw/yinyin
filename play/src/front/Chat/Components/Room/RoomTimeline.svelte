@@ -3,6 +3,7 @@
     import { afterUpdate } from "svelte";
     import { ChatRoom } from "../../Connection/ChatConnection";
     import { selectedRoom } from "../../Stores/ChatStore";
+    import Message from "./Message.svelte";
 
     export let room: ChatRoom;
 
@@ -34,13 +35,7 @@
                 <p class="tw-self-center tw-text-md tw-text-gray-500">No message</p>
             {/if}
             {#each $messages as message (message.id)}
-                <li class={`tw-w-fit ${message.isMyMessage && "tw-self-end"}`}>
-                    <p class="tw-text-gray-500 tw-text-xxs tw-p-0 tw-m-0">{message.date?.toLocaleTimeString()}</p>
-                    <div class="tw-bg-dark-blue tw-rounded-md tw-p-2">
-                        <p class="tw-p-0 tw-m-0 tw-text-xs">{message.content}</p>
-                    </div>
-
-                </li>
+               <Message {message}/>
             {/each}
         </ul>
     </div>

@@ -2,6 +2,7 @@
     import { ChatRoom } from "../../Connection/ChatConnection";
     import NotificationBadge from "../NotificationBadge.svelte";
     import { selectedRoom } from "../../Stores/ChatStore";
+    import Avatar from "../Avatar.svelte";
 
     export let room: ChatRoom;
 
@@ -14,13 +15,7 @@
     class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1"
     on:click={()=> selectedRoom.set(room)}>
     <div class="tw-relative">
-        {#if room.avatarUrl}
-            <img src={room.avatarUrl} alt={$roomName} />
-        {:else}
-            <div class="tw-rounded-full tw-bg-cyan-500 tw-h-6 tw-w-6 tw-text-center">
-                {$roomName.charAt(0)}
-            </div>
-        {/if}
+        <Avatar avatarUrl={room.avatarUrl} fallbackFirstLetter={$roomName.charAt(0)}/>
         {#if $hasUnreadMessage}
             <NotificationBadge type="warning" />
         {/if}

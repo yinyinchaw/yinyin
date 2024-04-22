@@ -5,10 +5,10 @@ import { User } from "../Xmpp/AbstractRoom";
 import { Message } from "../Model/Message";
 import { FileExt, UploadedFile, uploadingState } from "../Service/FileMessageManager";
 import { _newChatMessageSubject } from "../../Stores/ChatStore";
+import { ChatRoom } from "../Connection/ChatConnection";
 import { mucRoomsStore, xmppServerConnectionStatusStore } from "./MucRoomsStore";
 import { userStore } from "./LocalUserStore";
 import { activeThreadStore } from "./ActiveThreadStore";
-import { ChatRoom } from "../Connection/ChatConnection";
 
 export interface ChatMessage {
     id: string;

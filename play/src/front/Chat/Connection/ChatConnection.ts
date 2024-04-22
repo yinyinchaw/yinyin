@@ -6,7 +6,7 @@ export interface ChatUser {
     id: string;
     presence: Readable<string>;
     username: string | undefined;
-    avatarUrl: string | undefined;
+    avatarUrl: string | null;
 }
 
 export interface ChatRoom {
@@ -25,7 +25,7 @@ export interface ChatRoom {
 
 export interface ChatMessage {
     id: string;
-    userId: string;
+    user: ChatUser | undefined;
     content: string;
     isMyMessage: boolean;
     date: Date | null;

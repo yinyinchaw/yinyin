@@ -91,7 +91,7 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         const filteredChatUser = this.client
             .getUsers()
             .filter((user) => user.userId !== this.client.getUserId())
-            .map((user: User) => new MatrixChatUser(user));
+            .map((user: User) => new MatrixChatUser(user, this.client));
         return new Map(filteredChatUser.map((user) => [user.id, user]));
     }
 
