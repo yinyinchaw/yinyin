@@ -1,7 +1,7 @@
-import { MatrixEvent, MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
+import { MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
 import { Writable, writable } from "svelte/store";
 import { ChatMessage, ChatRoom } from "../ChatConnection";
-import { MatrixChatUser } from "./MatrixChatUser";
+import { MatrixChatMessage } from "./MatrixChatMessage";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -46,28 +46,12 @@ export class MatrixChatRoom implements ChatRoom {
             : "multiple";
     }
 
-    private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): ChatMessage[] {
+    private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): MatrixChatMessage[] {
         return matrixRoom
             .getLiveTimeline()
             .getEvents()
             .filter((event) => event.getType() === "m.room.message")
-            .map((event, index) => ({
-                id: event.getId() ?? index.toString(),
-                user: this.fetchMessageUser(event, matrixRoom),
-                content: event.getContent().body,
-                isMyMessage: this.matrixRoom.myUserId === event.getSender(),
-                date: event.getDate(),
-            }));
-    }
-
-    private fetchMessageUser(event: MatrixEvent, matrixRoom: Room) {
-        let messageUser;
-        const senderUserId = event.getSender();
-        if (senderUserId) {
-            const matrixUser = matrixRoom.client.getUser(senderUserId);
-            messageUser = matrixUser ? new MatrixChatUser(matrixUser, matrixRoom.client) : undefined;
-        }
-        return messageUser;
+            .map((event) => new MatrixChatMessage(event, matrixRoom.client, matrixRoom));
     }
 
     setTimelineAsRead() {

@@ -11,7 +11,7 @@
 
 </script>
 
-<div class="tw-flex tw-flex-col tw-gap-2 tw-h-screen">
+<div class="tw-flex tw-flex-col tw-gap-2 tw-h-full">
     {#if $chatConnectionStatus === "CONNECTING"}
         <div class="tw-text-gray-400 tw-text-xl tw-flex tw-flex-col tw-items-center tw-mt-20">
             <IconLoader3 class="tw-animate-spin" size={40} />

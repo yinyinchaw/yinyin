@@ -25,10 +25,11 @@ export interface ChatRoom {
 
 export interface ChatMessage {
     id: string;
-    user: ChatUser | undefined;
-    content: string;
+    sender: ChatUser | undefined;
+    content: string | undefined;
     isMyMessage: boolean;
     date: Date | null;
+    responseTo: ChatMessage | undefined;
 }
 
 export interface CreateRoomOptions {

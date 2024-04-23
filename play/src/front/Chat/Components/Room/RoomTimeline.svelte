@@ -28,9 +28,7 @@
     <button class="tw-p-0 tw-m-0" on:click={()=>selectedRoom.set(undefined)}>
         <IconArrowLeft />
     </button>
-    <div
-        class="tw-flex-1 tw-overflow-auto">
-        <ul class="tw-list-none tw-p-0 tw-flex tw-flex-col">
+        <ul class="tw-list-none tw-p-0 tw-flex-1 tw-overflow-auto tw-flex tw-flex-col test">
             {#if $messages.length === 0}
                 <p class="tw-self-center tw-text-md tw-text-gray-500">No message</p>
             {/if}
@@ -38,7 +36,6 @@
                <Message {message}/>
             {/each}
         </ul>
-    </div>
     <div>
         <form on:submit|preventDefault={()=>sendMessage(message)}>
             <input bind:value={message}
@@ -48,6 +45,3 @@
         </form>
     </div>
 {/if}
-
-
-
