@@ -5,7 +5,7 @@ import { User } from "../Xmpp/AbstractRoom";
 import { Message } from "../Model/Message";
 import { FileExt, UploadedFile, uploadingState } from "../Service/FileMessageManager";
 import { _newChatMessageSubject } from "../../Stores/ChatStore";
-import { ChatRoom } from "../Connection/ChatConnection";
+import { ChatMessage as NewChatMessage, ChatRoom } from "../Connection/ChatConnection";
 import { mucRoomsStore, xmppServerConnectionStatusStore } from "./MucRoomsStore";
 import { userStore } from "./LocalUserStore";
 import { activeThreadStore } from "./ActiveThreadStore";
@@ -167,3 +167,5 @@ export const showPart = derived(
         return "home";
     }
 );
+
+export const selectedChatMessageToReply = writable<NewChatMessage | null>(null);

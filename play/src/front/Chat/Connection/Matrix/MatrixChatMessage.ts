@@ -1,4 +1,4 @@
-import { IContent, MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
+import { MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
 import { ChatMessage, ChatUser } from "../ChatConnection";
 import { MatrixChatUser } from "./MatrixChatUser";
 
@@ -8,19 +8,20 @@ export class MatrixChatMessage implements ChatMessage {
     sender: ChatUser | undefined;
     isMyMessage: boolean;
     date: Date | null;
-    responseTo: ChatMessage | undefined;
+    isQuotedMessage: boolean | undefined;
+    quotedMessage: ChatMessage | undefined;
 
     constructor(
         private event: MatrixEvent,
         private client: MatrixClient,
         private room: Room,
-        isReplyMessage?: boolean
+        isQuotedMessage?: boolean
     ) {
-        console.debug(this.event);
         this.id = event.getId() ?? "";
-        this.content = this.parseMessageContent();
+        this.content = this.getMessageContent();
         this.sender = this.getSender();
-        this.isMyMessage = isReplyMessage ? false : this.client.getUserId() === event.getSender();
+        this.isMyMessage = this.client.getUserId() === event.getSender();
+        this.isQuotedMessage = isQuotedMessage;
         this.date = event.getDate();
     }
 
@@ -34,26 +35,24 @@ export class MatrixChatMessage implements ChatMessage {
         return messageUser;
     }
 
-    private parseMessageContent() {
-        const content = this.event.getContent();
-        this.setResponseToMessageIfExist(content);
-        if (content.formatted_body) {
-            return content.formatted_body;
+    private getMessageContent() {
+        const content = this.event.getOriginalContent();
+        const quotedMessage = this.getQuotedMessage();
+        if (quotedMessage !== undefined) {
+            this.quotedMessage = quotedMessage;
+            return content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, "");
         }
         return content.body;
     }
 
-    private setResponseToMessageIfExist(content: IContent) {
-        if (content["m.relates_to"]) {
-            if (content["m.relates_to"]["m.in_reply_to"]) {
-                const { event_id } = content["m.relates_to"]["m.in_reply_to"];
-                if (event_id) {
-                    const replyToEvent = this.room.findEventById(event_id);
-                    if (replyToEvent) {
-                        this.responseTo = new MatrixChatMessage(replyToEvent, this.client, this.room, true);
-                    }
-                }
+    private getQuotedMessage() {
+        const replyEventId = this.event.replyEventId;
+        if (replyEventId) {
+            const replyToEvent = this.room.findEventById(replyEventId);
+            if (replyToEvent) {
+                return new MatrixChatMessage(replyToEvent, this.client, this.room, true);
             }
         }
+        return;
     }
 }

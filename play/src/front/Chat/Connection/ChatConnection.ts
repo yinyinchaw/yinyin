@@ -28,8 +28,9 @@ export interface ChatMessage {
     sender: ChatUser | undefined;
     content: string | undefined;
     isMyMessage: boolean;
+    isQuotedMessage: boolean | undefined;
     date: Date | null;
-    responseTo: ChatMessage | undefined;
+    quotedMessage: ChatMessage | undefined;
 }
 
 export interface CreateRoomOptions {

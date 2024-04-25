@@ -1,7 +1,8 @@
-import { MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
-import { Writable, writable } from "svelte/store";
+import { IContent, MatrixEvent, MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
+import { get, Writable, writable } from "svelte/store";
 import { ChatMessage, ChatRoom } from "../ChatConnection";
 import { MatrixChatMessage } from "./MatrixChatMessage";
+import { selectedChatMessageToReply } from "../../Stores/ChatStore";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -46,12 +47,37 @@ export class MatrixChatRoom implements ChatRoom {
             : "multiple";
     }
 
-    private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): MatrixChatMessage[] {
+    static replayMatrixRoomMessageEvents(matrixRoom: Room): MatrixEvent[] {
         return matrixRoom
             .getLiveTimeline()
             .getEvents()
             .filter((event) => event.getType() === "m.room.message")
-            .map((event) => new MatrixChatMessage(event, matrixRoom.client, matrixRoom));
+            .reduce(replayMessageModifications(), []);
+
+        function replayMessageModifications() {
+            return (events: MatrixEvent[], event: MatrixEvent) => {
+                const eventRelation = event.getRelation();
+                if (eventRelation?.rel_type === "m.replace") {
+                    const indexOfEventToReplace = events.findIndex(
+                        (eventToReplace) => eventToReplace.getId() === eventRelation.event_id
+                    );
+                    if (indexOfEventToReplace !== -1) {
+                        events[indexOfEventToReplace].getOriginalContent().formatted_body =
+                            event.getOriginalContent()["m.new_content"].formatted_body;
+                        events[indexOfEventToReplace].getOriginalContent().body =
+                            event.getOriginalContent()["m.new_content"].body;
+                        return events;
+                    }
+                }
+                return events.concat(event);
+            };
+        }
+    }
+
+    private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): MatrixChatMessage[] {
+        return MatrixChatRoom.replayMatrixRoomMessageEvents(matrixRoom).map(
+            (event) => new MatrixChatMessage(event, matrixRoom.client, matrixRoom)
+        );
     }
 
     setTimelineAsRead() {
@@ -65,8 +91,20 @@ export class MatrixChatRoom implements ChatRoom {
     }
 
     sendMessage(message: string) {
+        function getMessageContent() {
+            const selectedChatMessageIDToReply = get(selectedChatMessageToReply)?.id;
+            const content: IContent = { body: message, msgtype: MsgType.Text, formatted_body: message };
+            if (selectedChatMessageIDToReply !== undefined) {
+                content["m.relates_to"] = { "m.in_reply_to": { event_id: selectedChatMessageIDToReply } };
+            }
+            return content;
+        }
+
         this.matrixRoom.client
-            .sendMessage(this.matrixRoom.roomId, { body: message, msgtype: MsgType.Text })
+            .sendMessage(this.matrixRoom.roomId, getMessageContent())
+            .then(() => {
+                selectedChatMessageToReply.set(null);
+            })
             .catch((error) => {
                 console.error(error);
             });
