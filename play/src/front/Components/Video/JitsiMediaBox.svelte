@@ -104,7 +104,7 @@
         </div>
     {/if}
     {#if peer.jitsiTrackWrapper.spaceUser}
-        {#await peer.jitsiTrackWrapper.spaceUser?.getWokaBase64()}
+        {#await peer.jitsiTrackWrapper.spaceUser?.getWokaBase64}
             <div />
         {:then wokaBase64}
             <UserTag

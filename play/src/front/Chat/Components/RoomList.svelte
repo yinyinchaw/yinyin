@@ -11,6 +11,7 @@
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
 
+    
     let displayDirectRooms = true;
     let displayRooms = true;
     let displayRoomInvitations = true;

@@ -1,12 +1,22 @@
-import { Readable } from "svelte/store";
+import { Readable, Writable } from "svelte/store";
 import { AtLeast } from "@workadventure/map-editor";
 import { RoomConnection } from "../../Connection/RoomConnection";
+import { SpaceUserExtended } from "../../Space/SpaceFilter/SpaceFilter";
+import { AvailabilityStatus, PartialSpaceUser } from "@workadventure/messages";
 
 export interface ChatUser {
     id: string;
-    presence: Readable<string>;
+    uuid?: string;
+    availabilityStatus: Writable<AvailabilityStatus>;
     username: string | undefined;
-    avatarUrl: string | null;
+    avatarUrl: string | undefined;
+    roomName: string | undefined;
+    playUri: string | undefined;
+    isAdmin?: boolean;
+    isMember?: boolean;
+    visitCardUrl?: string;
+    color: string | undefined;
+    spaceId : number | undefined;
 }
 
 export interface ChatRoom {
@@ -21,6 +31,7 @@ export interface ChatRoom {
     removeMessage: (messageId: string) => void;
     isInvited: boolean;
     setTimelineAsRead: () => void;
+    membersId: string[];
     leaveRoom: () => void;
     joinRoom: () => void;
 }
@@ -42,6 +53,9 @@ export type ChatMessageContent = { body: string; url: string | undefined };
 export interface CreateRoomOptions {
     name?: string;
     visibility?: "private" | "public";
+    is_direct?: boolean;
+    invite?: string[];
+    preset?: "private_chat" | "public_chat" | "trusted_private_chat";
 }
 
 export type ConnectionStatus = "ONLINE" | "ON_ERROR" | "CONNECTING" | "OFFLINE";
@@ -52,6 +66,11 @@ export interface ChatConnectionInterface {
     directRooms: Readable<ChatRoom[]>;
     rooms: Readable<ChatRoom[]>;
     invitations: Readable<ChatRoom[]>;
+    addUserFromSpace(user: SpaceUserExtended): void;
+    updateUserFromSpace(user: PartialSpaceUser): void;
+    disconnectSpaceUser(userId:number):void
+    sendBan: (id: string) => void;
+    createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
 }
 
 export type Connection = AtLeast<RoomConnection, "queryChatMembers">;

@@ -7,7 +7,6 @@ vi.mock("../../Phaser/Entity/CharacterLayerManager", () => {
         },
     };
 });
-
 import { Space } from "../Space";
 import { SpaceFilterAlreadyExistError, SpaceNameIsEmptyError } from "../Errors/SpaceError";
 import { SpaceFilterInterface } from "../SpaceFilter/SpaceFilter";
@@ -33,6 +32,7 @@ describe("Space test", () => {
             send: vi.fn(),
         };
 
+       
         const mockEncoder: { encode: (messageCoded: ClientToServerMessage) => { finish: () => Uint8Array } } = {
             encode: vi.fn().mockImplementation((msg) => {
                 return {

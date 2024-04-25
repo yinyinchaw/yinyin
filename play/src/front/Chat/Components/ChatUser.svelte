@@ -2,15 +2,16 @@
     import highlightWords from "highlight-words";
     import { MoreHorizontalIcon, ShieldOffIcon, ShieldIcon, SlashIcon, UsersIcon } from "svelte-feather-icons";
     import { get } from "svelte/store";
-    import { LL } from "../../../i18n/i18n-svelte";
-    import { defaultColor, defaultWoka, User } from "../Xmpp/AbstractRoom";
-    import { MucRoom } from "../Xmpp/MucRoom";
-    import { mucRoomsStore } from "../Stores/MucRoomsStore";
-    import { requestVisitCardsStore } from "../../Stores/GameStore";
-    import { ENABLE_OPENID } from "../../Enum/EnvironmentVariable";
+    import { LL } from "../../../../i18n/i18n-svelte";
+    import { defaultColor, defaultWoka, User } from "../../Xmpp/AbstractRoom";
+  
+    import { requestVisitCardsStore } from "../../../Stores/GameStore";
+    import { ENABLE_OPENID } from "../../../Enum/EnvironmentVariable";
     import walk from "../../../../public/static/svg/walk.svg";
     import teleport from "../../../../public/static/svg/teleport.svg";
     import businessCard from "../../../../public/static/svg/business-cards.svg";
+    import { mucRoomsStore } from "../Stores/MucRoomsStore";
+    import { MucRoom } from "../Xmpp/MucRoom";
     
 
     export let mucRoom: MucRoom;
@@ -93,9 +94,10 @@
             default:
                 return $LL.chat.status.online();
             case 2:
-                return $LL.chat.status.away();
-            case 3:
                 return $LL.chat.status.unavailable();
+            case 3:
+                return $LL.chat.status.away();
+
         }
     }
 

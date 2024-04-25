@@ -235,6 +235,7 @@ export class SocketManager implements ZoneEventListener {
                 visitCardUrl: socketData.visitCardUrl ?? "", // TODO: turn this into an optional field
                 userRoomToken: socketData.userRoomToken ?? "", // TODO: turn this into an optional field
                 lastCommandId: socketData.lastCommandId ?? "", // TODO: turn this into an optional field
+                chatID : socketData.chatID ,
             };
 
             debug("Calling joinRoom '" + socketData.roomId + "'");
@@ -389,7 +390,7 @@ export class SocketManager implements ZoneEventListener {
                                     const updateSpaceUserMessage = message.message.updateSpaceUserMessage;
                                     const space = this.spaces.get(updateSpaceUserMessage.spaceName);
                                     if (space && updateSpaceUserMessage.user) {
-                                        space.localUpdateUser(updateSpaceUserMessage.user);
+                                        space.localUpdateUser(updateSpaceUserMessage.user,socketData.world);
                                     }
                                     break;
                                 }
@@ -703,6 +704,8 @@ export class SocketManager implements ZoneEventListener {
             $case: "setPlayerDetailsMessage",
             setPlayerDetailsMessage: playerDetailsMessage,
         };
+
+
         socketManager.forwardMessageToBack(client, pusherToBackMessage);
 
         if (socketData.spaceUser.availabilityStatus !== playerDetailsMessage.availabilityStatus) {
@@ -710,9 +713,10 @@ export class SocketManager implements ZoneEventListener {
             const partialSpaceUser: PartialSpaceUser = PartialSpaceUser.fromPartial({
                 availabilityStatus: playerDetailsMessage.availabilityStatus,
                 id: socketData.userId,
+                chatID : socketData.chatID,
             });
             socketData.spaces.forEach((space) => {
-                space.updateUser(partialSpaceUser);
+                space.updateUser(partialSpaceUser,socketData.world);
             });
         }
     }
@@ -1213,7 +1217,7 @@ export class SocketManager implements ZoneEventListener {
             id: socketData.userId,
         });
         socketData.spaces.forEach((space) => {
-            space.updateUser(partialSpaceUser);
+            space.updateUser(partialSpaceUser,socketData.world);
         });
     }
 
@@ -1226,7 +1230,7 @@ export class SocketManager implements ZoneEventListener {
             id: socketData.userId,
         });
         socketData.spaces.forEach((space) => {
-            space.updateUser(partialSpaceUser);
+            space.updateUser(partialSpaceUser,socketData.world);
         });
     }
 
@@ -1239,7 +1243,7 @@ export class SocketManager implements ZoneEventListener {
             id: socketData.userId,
         });
         socketData.spaces.forEach((space) => {
-            space.updateUser(partialSpaceUser);
+            space.updateUser(partialSpaceUser,socketData.world);
         });
     }
 
@@ -1254,7 +1258,7 @@ export class SocketManager implements ZoneEventListener {
         socketData.spaces
             .filter((space) => !megaphoneStateMessage.spaceName || space.name === megaphoneStateMessage.spaceName)
             .forEach((space) => {
-                space.updateUser(partialSpaceUser);
+                space.updateUser(partialSpaceUser,socketData.world);
             });
     }
 
@@ -1266,7 +1270,7 @@ export class SocketManager implements ZoneEventListener {
                 jitsiParticipantId,
                 id: socketData.userId,
             });
-            space.updateUser(partialSpaceUser);
+            space.updateUser(partialSpaceUser,socketData.world);
         }
     }
 

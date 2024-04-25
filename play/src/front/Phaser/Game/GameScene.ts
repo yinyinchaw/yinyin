@@ -150,7 +150,7 @@ import { warningMessageStore } from "../../Stores/ErrorStore";
 import { getCoWebSite, openCoWebSite } from "../../Chat/Utils";
 import { chatConnectionManager } from "../../Chat/Connection/ChatConnectionManager";
 import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
-import { WORLD_SPACE_NAME } from "../../Space/Space";
+import { CONNECTED_USER_FILTER_NAME, WORLD_SPACE_NAME } from "../../Space/Space";
 import { StreamSpaceWatcherSingleton } from "../../Space/SpaceWatcher/SocketSpaceWatcher";
 import { ChatConnectionInterface } from "../../Chat/Connection/ChatConnection";
 import { MatrixChatConnection } from "../../Chat/Connection/Matrix/MatrixChatConnection";
@@ -1527,10 +1527,6 @@ export class GameScene extends DirtyScene {
                     await this.mapEditorModeManager?.updateMapToNewest(commandsToApply);
                 }
 
-                const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
-                StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);
-
-                spaceProvider.add(WORLD_SPACE_NAME);
                 if (this.connection) {
                     //We need to add an env parameter to switch between chat services
                     this.chatConnection = new MatrixChatConnection(
@@ -1538,6 +1534,15 @@ export class GameScene extends DirtyScene {
                         new MatrixClientWrapper(MATRIX_PUBLIC_URI)
                     );
                 }
+
+                const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
+                StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);
+
+
+                
+                spaceProvider.add(WORLD_SPACE_NAME).watch(CONNECTED_USER_FILTER_NAME);
+
+
 
                 this.tryOpenMapEditorWithToolEditorParameter();
 

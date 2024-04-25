@@ -4,6 +4,8 @@
     import { mapEditorModeStore } from "../Stores/MapEditorStore";
     import { chatVisibilityStore } from "../Stores/ChatStore";
     import Chat from "./Components/Chat.svelte";
+    import { LocalSpaceProviderSingleton } from "../Space/SpaceProvider/SpaceStore";
+    import { CONNECTED_USER_FILTER_NAME, WORLD_SPACE_NAME } from "../Space/Space";
 
 
     function closeChat() {
@@ -19,12 +21,30 @@
         }
     }
 
+    chatVisibilityStore.subscribe((isVisible : boolean)=>{
+      
+      const SpaceProvider = LocalSpaceProviderSingleton.getInstance();
+      if(!SpaceProvider)return;
+
+      const allWorldUserSpace = SpaceProvider.get(WORLD_SPACE_NAME);
+      const connectedUsersFilter =  allWorldUserSpace.getSpaceFilter(CONNECTED_USER_FILTER_NAME);
+
+      if(isVisible){
+        connectedUsersFilter.setFilter({
+          $case : "spaceFilterEverybody",
+          spaceFilterEverybody : {}
+        })
+      }else{
+        connectedUsersFilter.setFilter(undefined);
+      } 
+    })
+
 </script>
 
 <svelte:window on:keydown={onKeyDown} />
 {#if $chatVisibilityStore}
     <section transition:fly={{ duration: 200,x:-335 }}
-         class="chatWindow tw-overflow-hidden tw-bg-dark-blue/95 tw-p-4">
+        class="chatWindow tw-overflow-hidden tw-bg-dark-blue/95 tw-p-4">
         <button class="close-window" on:click={closeChat}>&#215;</button>
         <Chat />
     </section>

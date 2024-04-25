@@ -517,6 +517,7 @@ message ChatMember {
   optional string wokaName = 2;
   optional string email = 3;
   optional string chatId = 4;
+  repeated string tags = 5; 
 }
 
 /*********** SERVER TO CLIENT MESSAGES *************/
@@ -852,6 +853,7 @@ message JoinRoomMessage {
   string userJid = 15;
   google.protobuf.StringValue lastCommandId = 16;
   bool canEdit = 17;
+  google.protobuf.StringValue chatID = 18;
 }
 
 message UserJoinedZoneMessage {
@@ -1185,6 +1187,7 @@ message SpaceUser{
   bool megaphoneState = 14; // used
   google.protobuf.StringValue jitsiParticipantId = 15; // used
   string uuid = 16; // used
+  google.protobuf.StringValue chatID = 17; // used
 }
 
 message PartialSpaceUser{
@@ -1204,6 +1207,7 @@ message PartialSpaceUser{
   google.protobuf.BoolValue megaphoneState = 14;
   google.protobuf.StringValue jitsiParticipantId = 15;
   string uuid = 16;
+  google.protobuf.StringValue chatID = 17;
 }
 
 message AddSpaceUserMessage{

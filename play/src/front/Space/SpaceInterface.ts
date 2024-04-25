@@ -9,5 +9,6 @@ emitJitsiParticipantId(participantId: string): void;
     getSpaceFilter(filterName: string): SpaceFilterInterface;
     watch(filterName: string): SpaceFilterInterface;
     stopWatching(filterName: string): void;
+    spaceFilterExist(filterName:string):boolean;
     destroy(): void;
 }

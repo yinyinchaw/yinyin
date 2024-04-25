@@ -8,7 +8,7 @@
     import { LL } from "../../../i18n/i18n-svelte";
     import { shownRoomListStore } from "../Stores/ChatStore";
     import { connectionManager } from "../../Connection/ConnectionManager";
-    import ChatUser from "./ChatUser.svelte";
+    import ChatUser from "./UserList/ChatUser.svelte";
     import Loader from "./Loader.svelte";
 
     export let mucRoom: MucRoom;

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ServerToClientMessage } from "@workadventure/messages";
 import { SpaceProviderInterface } from "../SpaceProvider/SpacerProviderInterface";
 import { LocalSpaceProviderSingleton } from "../SpaceProvider/SpaceStore";
-
+import { ChatConnectionInterface } from "../../Chat/Connection/ChatConnection";
+import { gameManager } from "../../Phaser/Game/GameManager";
 
 export enum SpaceEvent {
     AddSpaceUser = "addSpaceUserMessage",
@@ -14,9 +15,10 @@ export class StreamSpaceWatcher {
     constructor(
         private spaceProvider: SpaceProviderInterface,
         private socket: WebSocket,
-        decoder: Required<{ decode: (messageCoded: Uint8Array) => ServerToClientMessage }>
+        decoder: Required<{ decode: (messageCoded: Uint8Array) => ServerToClientMessage }>,
+        private chatConnection: ChatConnectionInterface = gameManager.getCurrentGameScene().chatConnection
     ) {
-        this.socket.addEventListener("message",(messageEvent: MessageEvent) => {
+        this.socket.addEventListener("message", async (messageEvent: MessageEvent) => {
             const arrayBuffer: ArrayBuffer = messageEvent.data;
             const serverMessage = decoder.decode(new Uint8Array(arrayBuffer));
             const message = serverMessage.message;
@@ -28,28 +30,34 @@ export class StreamSpaceWatcher {
 
                 switch (subMessage.$case) {
                     case SpaceEvent.AddSpaceUser: {
+                        if (!subMessage.addSpaceUserMessage.user || !subMessage.addSpaceUserMessage.filterName) return;
+
+                        const extendedUser = await this.spaceProvider
+                            .get(subMessage.addSpaceUserMessage.spaceName)
+                            .getSpaceFilter(subMessage.addSpaceUserMessage.filterName)
+                            .addUser(subMessage.addSpaceUserMessage.user);
                         
-                        if (subMessage.addSpaceUserMessage.user && subMessage.addSpaceUserMessage.filterName)
-                            this.spaceProvider
-                                .get(subMessage.addSpaceUserMessage.spaceName)
-                                .getSpaceFilter(subMessage.addSpaceUserMessage.filterName)
-                                .addUser(subMessage.addSpaceUserMessage.user);
+                        chatConnection.addUserFromSpace(extendedUser);
                         break;
                     }
                     case SpaceEvent.UpdateSpaceUser: {
-                        if (subMessage.updateSpaceUserMessage.user && subMessage.updateSpaceUserMessage.filterName)
-                            this.spaceProvider
-                                .get(subMessage.updateSpaceUserMessage.spaceName)
-                                .getSpaceFilter(subMessage.updateSpaceUserMessage.filterName)
-                                .updateUserData(subMessage.updateSpaceUserMessage.user);
+                        if (!subMessage.updateSpaceUserMessage.user || !subMessage.updateSpaceUserMessage.filterName)
+                            return;
+
+                        this.spaceProvider
+                            .get(subMessage.updateSpaceUserMessage.spaceName)
+                            .getSpaceFilter(subMessage.updateSpaceUserMessage.filterName)
+                            .updateUserData(subMessage.updateSpaceUserMessage.user);
+                        chatConnection.updateUserFromSpace(subMessage.updateSpaceUserMessage.user);
                         break;
                     }
                     case SpaceEvent.RemoveSpaceUser: {
-                        if (subMessage.removeSpaceUserMessage.userId && subMessage.removeSpaceUserMessage.filterName)
-                            this.spaceProvider
-                                .get(subMessage.removeSpaceUserMessage.spaceName)
-                                .getSpaceFilter(subMessage.removeSpaceUserMessage.filterName)
-                                .removeUser(subMessage.removeSpaceUserMessage.userId);
+                        if (!subMessage.removeSpaceUserMessage.userId || !subMessage.removeSpaceUserMessage.filterName)return ; 
+                        this.spaceProvider
+                            .get(subMessage.removeSpaceUserMessage.spaceName)
+                            .getSpaceFilter(subMessage.removeSpaceUserMessage.filterName)
+                            .removeUser(subMessage.removeSpaceUserMessage.userId);
+                        chatConnection.disconnectSpaceUser(subMessage.removeSpaceUserMessage.userId)
                         break;
                     }
                     case SpaceEvent.updateSpaceMetadata: {

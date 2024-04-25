@@ -1,3 +1,4 @@
+import merge from "lodash/merge";
 import {
     ClientToServerMessage,
     PartialSpaceUser,
@@ -13,8 +14,8 @@ import { CharacterLayerManager } from "../../Phaser/Entity/CharacterLayerManager
 
 export interface SpaceFilterInterface {
     userExist(userId: number): boolean;
-    addUser(user: SpaceUser): void;
-    getUsers(): SpaceUser[];
+    addUser(user: SpaceUser): Promise<SpaceUserExtended>;
+    getUsers(): SpaceUserExtended[];
     users: Writable<Map<number, SpaceUserExtended>>;
     getUser(userId: number): SpaceUser | null;
     removeUser(userId: number): void;
@@ -26,7 +27,7 @@ export interface SpaceFilterInterface {
 
 export interface SpaceUserExtended extends SpaceUser {
     wokaPromise: Promise<string> | undefined;
-    getWokaBase64(): Promise<string>;
+    getWokaBase64: string;
     updateSubject: Subject<{
         newUser: SpaceUserExtended;
         changes: PartialSpaceUser;
@@ -71,19 +72,20 @@ export class SpaceFilter implements SpaceFilterInterface {
     userExist(userId: number): boolean {
         return get(this.users).has(userId);
     }
-    addUser(user: SpaceUser): void {
-        const extendSpaceUser = this.extendSpaceUser(user, this.spaceName);
+    async addUser(user: SpaceUser): Promise<SpaceUserExtended> {
+        const extendSpaceUser = await this.extendSpaceUser(user, this.spaceName);
         this.users.update((value) => {
             if (!this.userExist(user.id)) value.set(user.id, extendSpaceUser);
             return value;
         });
+        return extendSpaceUser;
     }
 
     getUser(userId: number): SpaceUser | null {
         return get(this.users).get(userId) || null;
     }
 
-    getUsers(): SpaceUser[] {
+    getUsers(): SpaceUserExtended[] {
         return Array.from(get(this.users).values());
     }
     removeUser(userId: number): boolean {
@@ -100,11 +102,9 @@ export class SpaceFilter implements SpaceFilterInterface {
         if (!newData.id && newData.id !== 0) return;
         const userToUpdate = get(this.users).get(newData.id);
         if (!userToUpdate) return;
+        merge(userToUpdate, newData);
         this.users.update((value) => {
-            value.set(userToUpdate.id, {
-                ...userToUpdate,
-                ...newData,
-            });
+            value.set(userToUpdate.id, userToUpdate);
             return value;
         });
     }
@@ -117,7 +117,7 @@ export class SpaceFilter implements SpaceFilterInterface {
         return this.name;
     }
 
-    private extendSpaceUser(user: SpaceUser, spaceName: string): SpaceUserExtended {
+    private async extendSpaceUser(user: SpaceUser, spaceName: string): Promise<SpaceUserExtended> {
         let emitter = undefined;
 
         emitter = {
@@ -141,12 +141,7 @@ export class SpaceFilter implements SpaceFilterInterface {
         return {
             ...user,
             wokaPromise: undefined,
-            getWokaBase64(): Promise<string> {
-                if (this.wokaPromise === undefined) {
-                    this.wokaPromise = CharacterLayerManager.wokaBase64(user.characterTextures);
-                }
-                return this.wokaPromise;
-            },
+            getWokaBase64: await CharacterLayerManager.wokaBase64(user.characterTextures) ,
             updateSubject: new Subject<{
                 newUser: SpaceUserExtended;
                 changes: PartialSpaceUser;
@@ -183,7 +178,6 @@ export class SpaceFilter implements SpaceFilterInterface {
         });
     }
     private addSpaceFilter() {
-
         this.sender({
             message: {
                 $case: "addSpaceFilterMessage",
@@ -257,9 +251,9 @@ export class SpaceFilter implements SpaceFilterInterface {
     }
 
     destroy() {
-            this.removeSpaceFilter({
-                spaceName: this.spaceName,
-                filterName: this.name,
-            });
+        this.removeSpaceFilter({
+            spaceName: this.spaceName,
+            filterName: this.name,
+        });
     }
 }

@@ -6,7 +6,7 @@
     import { MucRoom } from "../Xmpp/MucRoom";
     import { activeThreadStore, settingsViewStore, usersListViewStore } from "../Stores/ActiveThreadStore";
     import ChatMessageForm from "./ChatMessageForm.svelte";
-    import ChatUser from "./ChatUser.svelte";
+    import ChatUser from "./UserList/ChatUser.svelte";
     import ChatMessagesList from "./ChatMessagesList.svelte";
     import OnlineUsers from "./OnlineUsers.svelte";
     import Loader from "./Loader.svelte";

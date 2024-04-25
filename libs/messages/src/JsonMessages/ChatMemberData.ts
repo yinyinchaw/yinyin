@@ -5,6 +5,7 @@ export const ChatMemberData = z.object({
   wokaName: z.string().optional(),
   email: z.string().optional(),
   chatId: z.string().optional(),
+  tags : z.string().array()
 });
 
 export type ChatMemberData = z.infer<typeof ChatMemberData>;

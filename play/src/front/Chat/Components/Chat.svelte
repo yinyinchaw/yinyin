@@ -3,11 +3,13 @@
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
     import { navChat } from "../Stores/ChatStore";
-    import UserList from "./UserList.svelte";
+    import RoomUserList from "./UserList/RoomUserList.svelte";
     import RoomList from "./RoomList.svelte";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
     $: chatConnectionStatus = chat.connectionStatus;
+
+    let searchValue = "";
 
 </script>
 
@@ -39,11 +41,12 @@
                 <input
                     class="wa-searchbar tw-block tw-text-white tw-w-full placeholder:tw-text-sm tw-rounded-3xl tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-border-solid tw-bg-transparent"
                     placeholder={$navChat === "users" ? $LL.chat.searchUser() : $LL.chat.searchChat()}
+                    bind:value={searchValue}
                 />
             </div>
         </div>
         {#if $navChat === "users"}
-            <UserList />
+            <RoomUserList searchText={searchValue}/>
         {:else}
             <RoomList />
         {/if}

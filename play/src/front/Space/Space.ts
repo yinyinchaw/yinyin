@@ -4,7 +4,7 @@ import { SpaceFilterAlreadyExistError, SpaceFilterDoesNotExistError, SpaceNameIs
 import { SpaceFilter, SpaceFilterInterface } from "./SpaceFilter/SpaceFilter";
 
 export const WORLD_SPACE_NAME = "allWorldUser";
-
+export const CONNECTED_USER_FILTER_NAME = 'connected_users';
 export class Space implements SpaceInterface {
     private readonly name: string;
 
@@ -55,6 +55,10 @@ export class Space implements SpaceInterface {
             throw new Error("Something went wrong with filterName");
         }
         return spaceFilter;
+    }
+
+    spaceFilterExist(filterName:string) : boolean {
+       return this.filters.has(filterName);
     }
 
     stopWatching(filterName: string) {
