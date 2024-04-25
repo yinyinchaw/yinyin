@@ -20,13 +20,13 @@
         room.leaveRoom();
     }
 
-
 </script>
 
 <div
     class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1"
     on:click={toggleDisplayInvitationRoomActions}>
     <div class="tw-relative">
+        <Avatar avatarUrl={room.avatarUrl} fallbackFirstLetter={$roomName.charAt(0)} />
     </div>
     <p class="tw-m-0">{$roomName}</p>
 </div>
@@ -36,4 +36,4 @@
         <button class="tw-text-red-500" on:click={()=>leaveRoom()}>Decline</button>
     </div>
 {/if}
-        <Avatar avatarUrl={room.avatarUrl} fallbackFirstLetter={$roomName.charAt(0)} />
+        

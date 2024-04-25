@@ -44,27 +44,29 @@
 </script>
 
 {#each [[$LL.chat.userList.isHere(),onThisMapUsers],...Array.from(usersByRoom?.entries()||[]).toSorted(([aKey,aValue],[bKey,bValue])=>aKey.localeCompare(bKey)),[DISCONNECTED_LABEL,disconnectedUsers??[]]] as [roomName,userInRoom]}
+    {#if userInRoom && userInRoom.length>0 }
     <div class="tw-px-4 tw-py-1 tw-flex tw-items-center">
-            <span
-                class="{roomName !== 'disconnected'
-                    ? 'tw-bg-light-blue'
-                    : 'tw-bg-gray'} tw-text-dark-purple tw-min-w-[20px] tw-h-5 tw-mr-3 tw-text-sm tw-font-semibold tw-flex tw-items-center tw-justify-center tw-rounded"
-            >
-                {userInRoom?.length}
-            </span>
+    <span
+        class="{roomName !== 'disconnected'
+            ? 'tw-bg-light-blue'
+            : 'tw-bg-gray'} tw-text-dark-purple tw-min-w-[20px] tw-h-5 tw-mr-3 tw-text-sm tw-font-semibold tw-flex tw-items-center tw-justify-center tw-rounded"
+    >
+    {#if userInRoom?.length && userInRoom.length > 0}
+        {userInRoom?.length}
+    {/if}
+    </span>
         <p class="tw-text-light-blue tw-mb-0 tw-text-sm tw-flex-auto">
             {roomName}
         </p>
         <button
         class="tw-text-lighter-purple"
-        on:click={() => shownRoomListStore.set($shownRoomListStore === roomName ? "" : roomName)}
-    >
-        <ChevronUpIcon
-            class={`tw-transform tw-transition ${$shownRoomListStore === roomName ? "" : "tw-rotate-180"}`}
-        />
+        on:click={() => shownRoomListStore.set($shownRoomListStore === roomName ? "" : roomName)}>
+    <ChevronUpIcon class={`tw-transform tw-transition ${$shownRoomListStore === roomName ? "" : "tw-rotate-180"}`}/>
     </button>
 
     </div>
+    {/if}
+
     {#if $shownRoomListStore === roomName}
         <UserList userList={userInRoom} {searchText}/>  
     {/if}  

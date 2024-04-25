@@ -1,5 +1,4 @@
-import { SetPresence, User, UserEvent } from "matrix-js-sdk";
-import { MatrixClient, User, UserEvent } from "matrix-js-sdk";
+import { MatrixClient, User, UserEvent,SetPresence } from "matrix-js-sdk";
 import { writable, Writable } from "svelte/store";
 import { ChatUser } from "../ChatConnection";
 import { AvailabilityStatus } from "@workadventure/messages";
@@ -8,7 +7,7 @@ export class MatrixChatUser implements ChatUser {
     id!: string;
     availabilityStatus: Writable<AvailabilityStatus>;
     username: string | undefined;
-    avatarUrl: string | undefined;
+    avatarUrl: string | null;
     roomName: string | undefined;
     playUri:string |undefined;
     isAdmin = false;
@@ -21,7 +20,6 @@ export class MatrixChatUser implements ChatUser {
         this.id = matrixChatUser.userId;
         this.username = matrixChatUser.displayName;
         this.avatarUrl = matrixClient.mxcUrlToHttp(matrixChatUser.avatarUrl ?? "", 48, 48);
-        this.color = matrixChatUser.color;
         this.availabilityStatus = writable(this.mapMatrixPresenceToAvailabilityStatus(matrixChatUser.presence));
         this.startHandlingChatUserEvent();
     }

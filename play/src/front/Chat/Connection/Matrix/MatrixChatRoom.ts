@@ -24,7 +24,10 @@ export class MatrixChatRoom implements ChatRoom {
         this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
         this.sendMessage = this.sendMessage.bind(this);
         this.isInvited = matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite");
-        this.membersId = [...matrixRoom.getMembersWithMembership(KnownMembership.Invite).map((member)=>member.userId),...matrixRoom.getMembersWithMembership(KnownMembership.Join).map((member)=>member.userId)];
+        this.membersId = [
+            ...matrixRoom.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
+            ...matrixRoom.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
+        ];
         this.startHandlingChatRoomEvents();
     }
 
@@ -33,7 +36,10 @@ export class MatrixChatRoom implements ChatRoom {
             if (room !== undefined) {
                 this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);
                 this.messages.set(this.mapMatrixRoomMessageToChatMessage(room));
-                this.membersId = [...room.getMembersWithMembership(KnownMembership.Invite).map((member)=>member.userId),...room.getMembersWithMembership(KnownMembership.Join).map((member)=>member.userId)];
+                this.membersId = [
+                    ...room.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
+                    ...room.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
+                ];
             }
         });
         this.matrixRoom.on(RoomEvent.Name, (room) => {

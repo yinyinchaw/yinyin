@@ -114,10 +114,11 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             .filter((user) => user.userId !== this.client.getUserId())
             .forEach((user) => {
                 user.avatarUrl = user.avatarUrl ?? defaultWoka;
-                this.userList.set(user.userId, new MatrixChatUser(user));
+                this.userList.set(user.userId, new MatrixChatUser(user,this.client));
             });
 
         this.getWorldChatMembers().then((members) => {
+            
             members.forEach((member) => {
                 if (!member.chatId) return;
 

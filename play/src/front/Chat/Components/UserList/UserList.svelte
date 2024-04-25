@@ -18,7 +18,7 @@
 
 </script>
 
-    {#if me}
+    {#if me && me.username?.toLocaleLowerCase().includes(searchText)}
         <User user={me} {searchText} />
     {/if}
 

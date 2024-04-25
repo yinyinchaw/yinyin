@@ -11,6 +11,7 @@
     import highlightWords from "highlight-words";
     import { gameManager } from "../../../Phaser/Game/GameManager";
     import { navChat, selectedRoom } from "../../Stores/ChatStore";
+    import Avatar from "../Avatar.svelte";
 
     export let user:ChatUser;
     export let searchText : string;
@@ -19,19 +20,13 @@
     $: availabilityStatus = (isMe) ? availabilityStatusStore : user.availabilityStatus; 
 
     let chatConnection = gameManager.getCurrentGameScene().chatConnection
-    //TODO : set related to status 
-    ///let isActive : boolean = true;  
 
     $: chunks = highlightWords({
         text: user?.username.match(/\[\d*]/) ? user?.username.substring(0, user?.username.search(/\[\d*]/)) : user.username,
         query: searchText,
     });
 
-    /*
-    4) revoir woka image avec fond
-    5)recherche par nom 
-    */
-
+  
     function getNameOfAvailabilityStatus(status: AvailabilityStatus) {
         switch (status) {
             case AvailabilityStatus.ONLINE : 

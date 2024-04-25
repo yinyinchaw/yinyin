@@ -9,7 +9,7 @@ export interface ChatUser {
     uuid?: string;
     availabilityStatus: Writable<AvailabilityStatus>;
     username: string | undefined;
-    avatarUrl: string | undefined;
+    avatarUrl: string | null;
     roomName: string | undefined;
     playUri: string | undefined;
     isAdmin?: boolean;
