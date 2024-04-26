@@ -35,7 +35,7 @@
     },new Map<string,ChatUser[]>()) as Map<string,ChatUser[]>;
 
     $: disconnectedUsers   = usersByRoom.get(DISCONNECTED_LABEL);
-    $: usersByRoom?.delete('disconnected');
+    $: usersByRoom?.delete(DISCONNECTED_LABEL);
 
     $: onThisMapUsers = usersByRoom.get($LL.chat.userList.isHere());
     $: usersByRoom?.delete($LL.chat.userList.isHere())

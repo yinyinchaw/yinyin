@@ -165,8 +165,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             roomName: user.roomName ?? userToUpdate.roomName,
             playUri: user.playUri ?? userToUpdate.playUri,
             username: user.name ?? userToUpdate.username,
-            isAdmin: user.tags && user.tags.length ? userToUpdate.isAdmin : user.tags.includes("admin"),
-            isMember: user.tags && user.tags.length ? userToUpdate.isMember : user.tags.includes("member"),
+            isAdmin: user.tags && user.tags.length > 0 ? user.tags.includes("admin") : userToUpdate.isAdmin ,
+            isMember: user.tags && user.tags.length > 0 ? user.tags.includes("member") : userToUpdate.isMember,
             visitCardUrl: user.visitCardUrl ?? userToUpdate.visitCardUrl,
             color: user.color || userToUpdate.color,
             spaceId: userToUpdate.spaceId,
@@ -286,7 +286,7 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     }
 
 
-    private getDirectRoomFor(userID : string): ChatRoom | undefined {
+    getDirectRoomFor(userID : string): ChatRoom | undefined {
         const directRooms = Array.from(this.roomList)
         .filter(([_, room]) => {
             return (
