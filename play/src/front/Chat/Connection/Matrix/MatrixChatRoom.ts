@@ -1,8 +1,9 @@
 import { IContent, MatrixEvent, MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
 import { get, Writable, writable } from "svelte/store";
+import { MediaEventContent, MediaEventInfo } from "matrix-js-sdk/lib/@types/media";
 import { ChatMessage, ChatRoom } from "../ChatConnection";
-import { MatrixChatMessage } from "./MatrixChatMessage";
 import { selectedChatMessageToReply } from "../../Stores/ChatStore";
+import { MatrixChatMessage } from "./MatrixChatMessage";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -91,23 +92,79 @@ export class MatrixChatRoom implements ChatRoom {
     }
 
     sendMessage(message: string) {
-        function getMessageContent() {
-            const selectedChatMessageIDToReply = get(selectedChatMessageToReply)?.id;
-            const content: IContent = { body: message, msgtype: MsgType.Text, formatted_body: message };
-            if (selectedChatMessageIDToReply !== undefined) {
-                content["m.relates_to"] = { "m.in_reply_to": { event_id: selectedChatMessageIDToReply } };
-            }
-            return content;
-        }
-
         this.matrixRoom.client
-            .sendMessage(this.matrixRoom.roomId, getMessageContent())
+            .sendMessage(this.matrixRoom.roomId, this.getMessageContent(message))
             .then(() => {
                 selectedChatMessageToReply.set(null);
             })
             .catch((error) => {
                 console.error(error);
             });
+    }
+
+    private getMessageContent(message: string): IContent {
+        const content: IContent = { body: message, msgtype: MsgType.Text, formatted_body: message };
+        this.applyReplyContentIfReplyTo(content);
+        return content;
+    }
+
+    private applyReplyContentIfReplyTo(content: IContent) {
+        const selectedChatMessageIDToReply = get(selectedChatMessageToReply)?.id;
+        if (selectedChatMessageIDToReply !== undefined) {
+            content["m.relates_to"] = { "m.in_reply_to": { event_id: selectedChatMessageIDToReply } };
+        }
+    }
+
+    async sendFiles(files: FileList) {
+        try {
+            await Promise.allSettled(Array.from(files).map((file) => this.sendFile(file)));
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    removeMessage(messageId: string) {
+        try {
+            this.matrixRoom.removeEvent(messageId);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    private async sendFile(file: File) {
+        try {
+            const uploadResponse = await this.matrixRoom.client.uploadContent(file);
+            const content: Omit<MediaEventContent, "info"> & {
+                info: Partial<MediaEventInfo>;
+                formatted_body?: string;
+            } = {
+                body: file.name,
+                formatted_body: file.name,
+                info: {
+                    size: file.size,
+                },
+                msgtype: this.getMessageTypeFromFile(file),
+                url: uploadResponse.content_uri, // set more specifically later
+            };
+            this.applyReplyContentIfReplyTo(content);
+
+            return this.matrixRoom.client.sendMessage(this.matrixRoom.roomId, content);
+        } catch (error) {
+            console.error(error);
+            return;
+        }
+    }
+
+    private getMessageTypeFromFile(file: File) {
+        if (file.type.startsWith("image/")) {
+            return MsgType.Image;
+        } else if (file.type.indexOf("audio/") === 0) {
+            return MsgType.Audio;
+        } else if (file.type.indexOf("video/") === 0) {
+            return MsgType.Video;
+        } else {
+            return MsgType.File;
+        }
     }
 
     joinRoom(): void {

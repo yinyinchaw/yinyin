@@ -4,6 +4,7 @@
     import { onDestroy } from "svelte";
     import { ChatRoom } from "../../Connection/ChatConnection";
     import { selectedChatMessageToReply } from "../../Stores/ChatStore";
+    import MessageFileInput from "./Message/MessageFileInput.svelte";
 
     export let room: ChatRoom;
 
@@ -35,11 +36,10 @@
         message = "";
     }
 
-
     function unselectChatMessageToReply() {
         selectedChatMessageToReply.set(null);
     }
-    
+
     onDestroy(() => {
         selectedChatChatMessageToReplyUnsubscriber();
     });
@@ -48,19 +48,21 @@
 
 {#if $selectedChatMessageToReply !== null}
     <div class="tw-flex tw-p-2 tw-items-center tw-gap-1">
-        <p class="tw-bg-brand-blue tw-rounded-md tw-p-2 tw-text-xs tw-m-0">{$selectedChatMessageToReply.content}</p>
+        <p class="tw-bg-brand-blue tw-rounded-md tw-p-2 tw-text-xs tw-m-0"
+           style:overflow-wrap="anywhere">{$selectedChatMessageToReply.content.body}</p>
         <button class="tw-p-0 tw-m-0" on:click={unselectChatMessageToReply}>
             <IconCircleX />
         </button>
     </div>
 {/if}
-<div class="tw-flex tw-items-center tw-gap-1 tw-relative">
+<div class="tw-flex tw-items-center tw-gap-1 tw-border tw-border-solid tw-rounded-xl tw-pr-1 tw-border-light-purple">
     <textarea rows={1} bind:value={message}
               bind:this={messageInput}
               on:keydown={sendMessageOrEscapeLine}
-              class="tw-w-full tw-rounded-xl wa-searchbar tw-block tw-text-white placeholder:tw-text-sm tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-border-solid tw-bg-transparent tw-resize-none tw-m-0 tw-pr-5"
+              class="tw-w-full tw-rounded-xl wa-searchbar tw-block tw-text-white placeholder:tw-text-sm tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-bg-transparent tw-resize-none tw-m-0 tw-pr-5 tw-border-none tw-outline-none tw-shadow-none focus:tw-ring-0"
               placeholder="Type your message" />
-    <button class="disabled:tw-opacity-30 disabled:!tw-cursor-none tw-absolute tw-right-1.5 tw-p-0 tw-m-0"
+    <MessageFileInput room={room} />
+    <button class="disabled:tw-opacity-30 disabled:!tw-cursor-none tw-p-0 tw-m-0"
             disabled={message.trim().length===0} on:click={()=>sendMessage(message)}>
         <IconSend size={20} />
     </button>

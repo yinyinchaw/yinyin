@@ -1,15 +1,16 @@
 import { MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
-import { ChatMessage, ChatUser } from "../ChatConnection";
+import { ChatMessage, ChatMessageContent, ChatMessageType, ChatUser } from "../ChatConnection";
 import { MatrixChatUser } from "./MatrixChatUser";
 
 export class MatrixChatMessage implements ChatMessage {
     id: string;
-    content: string;
+    content: ChatMessageContent;
     sender: ChatUser | undefined;
     isMyMessage: boolean;
     date: Date | null;
     isQuotedMessage: boolean | undefined;
     quotedMessage: ChatMessage | undefined;
+    type: ChatMessageType;
 
     constructor(
         private event: MatrixEvent,
@@ -18,11 +19,12 @@ export class MatrixChatMessage implements ChatMessage {
         isQuotedMessage?: boolean
     ) {
         this.id = event.getId() ?? "";
-        this.content = this.getMessageContent();
+        this.type = this.mapMatrixMessageTypeToChatMessage();
+        this.date = event.getDate();
         this.sender = this.getSender();
         this.isMyMessage = this.client.getUserId() === event.getSender();
+        this.content = this.getMessageContent();
         this.isQuotedMessage = isQuotedMessage;
-        this.date = event.getDate();
     }
 
     private getSender() {
@@ -35,14 +37,22 @@ export class MatrixChatMessage implements ChatMessage {
         return messageUser;
     }
 
-    private getMessageContent() {
+    private getMessageContent(): ChatMessageContent {
         const content = this.event.getOriginalContent();
         const quotedMessage = this.getQuotedMessage();
         if (quotedMessage !== undefined) {
             this.quotedMessage = quotedMessage;
-            return content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, "");
+            return { body: content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, ""), url: undefined };
         }
-        return content.body;
+
+        if (this.type !== "text") {
+            return {
+                body: content.body,
+                url: this.client.mxcUrlToHttp(this.event.getOriginalContent().url) ?? undefined,
+            };
+        }
+
+        return { body: content.body, url: undefined };
     }
 
     private getQuotedMessage() {
@@ -54,5 +64,22 @@ export class MatrixChatMessage implements ChatMessage {
             }
         }
         return;
+    }
+
+    private mapMatrixMessageTypeToChatMessage() {
+        const matrixMessageType = this.event.getOriginalContent().msgtype;
+        switch (matrixMessageType) {
+            case "m.text":
+                return "text";
+            case "m.image":
+                return "image";
+            case "m.file":
+                return "file";
+            case "m.audio":
+                return "audio";
+            case "m.video":
+                return "video";
+        }
+        return "text";
     }
 }

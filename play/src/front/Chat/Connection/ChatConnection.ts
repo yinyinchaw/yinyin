@@ -17,6 +17,8 @@ export interface ChatRoom {
     avatarUrl: string | undefined;
     messages: Readable<ChatMessage[]>;
     sendMessage: (message: string) => void;
+    sendFiles: (files: FileList) => Promise<void>;
+    removeMessage: (messageId: string) => void;
     isInvited: boolean;
     setTimelineAsRead: () => void;
     leaveRoom: () => void;
@@ -26,12 +28,16 @@ export interface ChatRoom {
 export interface ChatMessage {
     id: string;
     sender: ChatUser | undefined;
-    content: string | undefined;
+    content: ChatMessageContent;
     isMyMessage: boolean;
     isQuotedMessage: boolean | undefined;
     date: Date | null;
     quotedMessage: ChatMessage | undefined;
+    type: ChatMessageType;
 }
+
+export type ChatMessageType = "text" | "image" | "file" | "audio" | "video";
+export type ChatMessageContent = { body: string; url: string | undefined };
 
 export interface CreateRoomOptions {
     name?: string;
