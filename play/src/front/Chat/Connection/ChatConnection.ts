@@ -70,7 +70,9 @@ export interface ChatConnectionInterface {
     updateUserFromSpace(user: PartialSpaceUser): void;
     disconnectSpaceUser(userId:number):void
     sendBan: (id: string) => void;
+    createRoom : (roomOptions : CreateRoomOptions) => Promise<{room_id: string;}>;
     createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
+    getDirectRoomFor(uuserChatId : string): ChatRoom | undefined;
 }
 
 export type Connection = AtLeast<RoomConnection, "queryChatMembers">;

@@ -1,32 +1,33 @@
 <script lang="ts">
     import { ShieldIcon, UsersIcon } from "svelte-feather-icons";
-    import AvailabilityStatusCircle from "../../../Components/ActionBar/AvailabilityStatus/AvailabilityStatusCircle.svelte";
     import { localUserStore } from "../../../Connection/LocalUserStore";
     import { availabilityStatusStore } from "../../../Stores/MediaStore";
     import { getColorHexOfStatus } from "../../../Utils/AvailabilityStatus";
-    import { ChatUser } from "../../Connection/ChatConnection";
+    import { ChatRoom, ChatUser } from "../../Connection/ChatConnection";
     import UserActionButton from "./UserActionButton.svelte";
     import { LL } from "../../../../i18n/i18n-svelte";
     import { AvailabilityStatus } from "@workadventure/messages";
     import highlightWords from "highlight-words";
     import { gameManager } from "../../../Phaser/Game/GameManager";
     import { navChat, selectedRoom } from "../../Stores/ChatStore";
-    import Avatar from "../Avatar.svelte";
 
     export let user:ChatUser;
     export let searchText : string;
-    let isMe = (user.id===localUserStore.getChatId());
 
-    $: availabilityStatus = (isMe) ? availabilityStatusStore : user.availabilityStatus; 
+    $: ({ id,availabilityStatus : userStatus, username = "",color,isAdmin,isMember,avatarUrl } = user);
+
+    $: isMe = (user.id===localUserStore.getChatId());
+
+
+    $: availabilityStatus = (isMe) ? availabilityStatusStore : userStatus; 
 
     let chatConnection = gameManager.getCurrentGameScene().chatConnection
 
     $: chunks = highlightWords({
-        text: user?.username.match(/\[\d*]/) ? user?.username.substring(0, user?.username.search(/\[\d*]/)) : user.username,
+        text: username.match(/\[\d*]/) ? username.substring(0, username.search(/\[\d*]/)) : username,
         query: searchText,
     });
 
-  
     function getNameOfAvailabilityStatus(status: AvailabilityStatus) {
         switch (status) {
             case AvailabilityStatus.ONLINE : 
@@ -44,10 +45,20 @@
                 return $LL.chat.status.unavailable();
         }
     }
-   
-    const openChat = async (userId: string) =>{
+
+    const openChat = async () =>{
+
         if(isMe)return;
-        const room = await chatConnection.createDirectRoom(userId);
+
+
+        //TODO: Delete if we keep auto join room for room create by a WA user
+        let room : ChatRoom | undefined = chatConnection.getDirectRoomFor(id);
+        if(!room) room = await chatConnection.createDirectRoom(id);
+
+        if(!room) return;
+
+        if(room.isInvited)room.joinRoom();
+
         selectedRoom.set(room)
         navChat.set("chat")
     }
@@ -56,23 +67,23 @@
 </script>
  <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div 
-on:click|stopPropagation={openChat(user.id)}
+on:click|stopPropagation={openChat}
 class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center tw-justify-between hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
    
     <div
-    class={`wa-chat-item ${user.isAdmin ? "admin" : "user"}  tw-cursor-default`}
+    class={`wa-chat-item ${isAdmin ? "admin" : "user"}  tw-cursor-default`}
   
 >
     <div
-        class={`tw-relative wa-avatar ${!$availabilityStatus && "tw-opacity-50"}  tw-cursor-default`}
-        style={`background-color: ${user.color}`}
+        class={`tw-relative wa-avatar ${!$userStatus && "tw-opacity-50"}  tw-cursor-default`}
+        style={`background-color: ${color}`}
 
     >
         <div class="wa-container  tw-cursor-default">
             <img
                 class="tw-w-full  tw-cursor-default"
                 style="image-rendering: pixelated;"
-                src={user.avatarUrl}
+                src={avatarUrl}
                 alt="Avatar"
             />
         </div>
@@ -92,21 +103,21 @@ class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center tw-justify-betwee
         {#each chunks as chunk (chunk.key)}
         <span class={`${chunk.match ? "tw-text-light-blue" : ""}  tw-cursor-default`}>{chunk.text}</span>
         {/each}
-        {#if user.username.match(/\[\d*]/)}
+        {#if username && username.match(/\[\d*]/)}
             <span class="tw-font-light tw-text-xs tw-text-gray  tw-cursor-default">
-                #{user.username
+                #{username
                     .match(/\[\d*]/)
                     ?.join()
                     ?.replace("[", "")
                     ?.replace("]", "")}
             </span>
         {/if}
-        {#if user.isAdmin}
+        {#if isAdmin}
         <span class="tw-text-warning" title={$LL.chat.role.admin()}>
             <ShieldIcon size="13" />
         </span>
     {/if}
-    {#if user.isMember}
+    {#if isMember}
         <span title={$LL.chat.role.member()}>
             <UsersIcon size="13" />
         </span>

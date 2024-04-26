@@ -7,6 +7,7 @@
     import Room from "./Room/Room.svelte";
     import RoomTimeline from "./Room/RoomTimeline.svelte";
     import AddRoomForm from "./Room/AddRoomForm.svelte";
+    import RoomInvitation from "./Room/RoomInvitation.svelte";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
 

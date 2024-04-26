@@ -13,8 +13,8 @@
     },null);
 
     $: filteredAndSortedUserList = userList
-    ?.filter((user : ChatUser)=> (me)?user.id!==me.id : true )
-    .toSorted((a,b)=>a.username?.localeCompare(b.username||"")||-1) || [];
+
+    $: filteredAndSortedUserList = [...userList?.filter((user : ChatUser)=> (me)? user.id!==me.id : true).sort((a : ChatUser,b : ChatUser)=>a.username?.localeCompare(b.username||"")||-1)] || [];
 
 </script>
 
@@ -25,6 +25,3 @@
     {#each [...filteredAndSortedUserList] as user (user.id)}
         <User {user} {searchText} />
     {/each}
-
-
-

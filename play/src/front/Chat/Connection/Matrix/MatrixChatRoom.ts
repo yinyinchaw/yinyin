@@ -32,6 +32,10 @@ export class MatrixChatRoom implements ChatRoom {
     }
 
     startHandlingChatRoomEvents() {
+        this.matrixRoom.on(RoomEvent.TimelineRefresh,(event,room)=>{
+            console.log('from timelineRefresh',event?.getType())
+        });
+
         this.matrixRoom.on(RoomEvent.Timeline, (_, room) => {
             if (room !== undefined) {
                 this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);

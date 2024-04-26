@@ -1,6 +1,7 @@
 <script lang="ts">
     import { ChatRoom } from "../../Connection/ChatConnection";
     import { selectedRoom } from "../../Stores/ChatStore";
+    import Avatar from "../Avatar.svelte";
 
     export let room: ChatRoom;
     let roomName = room.name;

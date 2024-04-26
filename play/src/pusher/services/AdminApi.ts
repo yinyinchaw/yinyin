@@ -113,6 +113,9 @@ export const isFetchMemberDataByUuidSuccessResponse = z.object({
     world: extendApi(z.string(), {
         description: "name of the world",
     }),
+    chatID: extendApi(z.string().optional(), {
+        description: "ChatId of user",
+    }),
 });
 
 export const isFetchWorldChatMembers = z.object({

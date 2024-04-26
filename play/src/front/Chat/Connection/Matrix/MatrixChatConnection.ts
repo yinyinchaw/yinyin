@@ -14,6 +14,7 @@ import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";
 import { SpaceUserExtended } from "../../../Space/SpaceFilter/SpaceFilter";
 import { AvailabilityStatus, ChatMemberData, PartialSpaceUser, SpaceUser } from "@workadventure/messages";
+import { KnownMembership } from "matrix-js-sdk/lib/@types/membership";
 
 export const defaultWoka =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
@@ -92,12 +93,20 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         this.client.on(RoomEvent.MyMembership, (room, membership, prevMembership) => {
             const { roomId } = room;
             if (membership !== prevMembership) {
-                if (membership === "join") {
+                if (membership === KnownMembership.Join) { 
                     this.roomList.set(roomId, new MatrixChatRoom(room));
                 }
-                if (membership === "leave" || membership === "ban") {
+                if (membership === KnownMembership.Leave || membership === KnownMembership.Ban) {
                     this.roomList.delete(roomId);
                 }
+                if (membership === KnownMembership.Invite) {
+                    debugger;
+                    const inviter = room.getDMInviter();
+                    const newRoom =  new MatrixChatRoom(room);
+                    if(inviter && this.userList.has(inviter)) newRoom.joinRoom();
+                    this.roomList.set(roomId,newRoom);
+                }
+
             }
         });
         await this.client.store.startup();
@@ -208,7 +217,9 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         //TODO: use UUID or ID from space user as main ID
         const userToDisconnect = Array.from(this.userList.values()).filter(({ spaceId }) => spaceId === userId)[0];
 
-        if (!userToDisconnect) return;
+        if (!userToDisconnect ||userToDisconnect.id ) return;
+
+
 
         this.userList.set(userToDisconnect.id, {
             id: userToDisconnect.id,
@@ -255,18 +266,10 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     }
 
     async createDirectRoom(userToInvite: string): Promise<ChatRoom | undefined> {
-        const directRooms = Array.from(this.roomList)
-            .filter(([_, room]) => {
-                return (
-                    room.type === "direct" &&
-                    room.membersId.some((memberId) => memberId === userToInvite && room.membersId.length === 2)
-                );
-            })
-            .map(([_, room]) => room);
 
-        if (directRooms.length > 0) {
-            return directRooms[0];
-        }
+        const existingDirectRoom = this.getDirectRoomFor(userToInvite);
+
+        if(existingDirectRoom) return existingDirectRoom;
 
         const { room_id } = await this.createRoom({
             invite: [userToInvite],
@@ -280,5 +283,22 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         const newRoom = new MatrixChatRoom(room);
         this.roomList.set(room_id, newRoom);
         return newRoom;
+    }
+
+
+    private getDirectRoomFor(userID : string): ChatRoom | undefined {
+        const directRooms = Array.from(this.roomList)
+        .filter(([_, room]) => {
+            return (
+                room.type === "direct" &&
+                room.membersId.some((memberId) => memberId === userID && room.membersId.length === 2)
+            );
+        })
+        .map(([_, room]) => room);
+
+        if (directRooms.length > 0) return directRooms[0];
+
+        return undefined;
+        
     }
 }
