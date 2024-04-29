@@ -143,7 +143,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
                         spaceId: undefined,
                     });
             });
-
         });
     }
 
@@ -242,7 +241,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     }
 
     sendBan(id: string): void {
-        //TODO : send invite to matrix to ban user (ban to space or ban 1 to 1 ?)
         const user = this.userList.get(id);
         if (!user || user.uuid || user.username) return;
         if (user.uuid && user.username && this.connection.emitBanPlayerMessage)
@@ -300,10 +298,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     }
 
     searchUsers(searchText: string): void {
-        
-        //Members
-        console.log('searchMember : ', searchText);
-
         this.connection.queryChatMembers(searchText).then(({members}: ChatMembersAnswer)=>{
             members.forEach((member: ChatMember) => {
                 if (!member.chatId || this.userList.has(member.chatId)) return;
@@ -322,6 +316,5 @@ export class MatrixChatConnection implements ChatConnectionInterface {
                 });
             });
         });
-
     }
 }

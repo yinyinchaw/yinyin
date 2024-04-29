@@ -74,6 +74,7 @@ export interface ChatConnectionInterface {
     createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
     getDirectRoomFor(uuserChatId : string): ChatRoom | undefined;
     searchUsers(searchText : string):void;
+    destroy():void;
 }
 
 export type Connection = AtLeast<RoomConnection, "queryChatMembers">;

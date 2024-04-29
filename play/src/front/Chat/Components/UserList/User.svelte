@@ -49,8 +49,6 @@
 
         if(isMe)return;
 
-
-        //TODO: Delete if we keep auto join room for room create by a WA user
         let room : ChatRoom | undefined = chatConnection.getDirectRoomFor(id);
         if(!room) room = await chatConnection.createDirectRoom(id);
 

@@ -45,7 +45,6 @@ export class Space implements CustomJsonReplacerInterface {
         this.clientWatchers.set(socketData.userId, watcher);
         this.users.forEach((user) => {
             if (this.isWatcherTargeted(watcher, user)) {
-                //avoir les filtres ce Space et ce user
                 const filterOfThisSpace = socketData.spacesFilters.get(this.name) ?? [];
                 const filtersTargeted = filterOfThisSpace.filter((spaceFilter) =>
                     this.filterOneUser(spaceFilter, user)
@@ -230,7 +229,7 @@ export class Space implements CustomJsonReplacerInterface {
                 (spaceFilter) =>
                     this.filterOneUser(spaceFilter, youngUser) || (oldUser && this.filterOneUser(spaceFilter, oldUser))
             );
-     
+            
             filtersTargeted.forEach((spaceFilter) => {
                 switch (subMessage.message?.$case) {
                     case "addSpaceUserMessage":

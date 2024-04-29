@@ -25,11 +25,9 @@
     const goTo = (type: string, playUri: string, uuid: string)=>{
         if (type === "room") {
             scriptUtils.goToPage(`${playUri}#moveToUser=${uuid}`);
-            //window.parent.postMessage({ type: "goToPage", data: { url: `${playUri}#moveToUser=${uuid}` } }, "*");
         } else if (type === "user") { 
             if(user.uuid && connection && user.playUri)
                 connection.emitAskPosition(user.uuid, user.playUri);
-           // window.parent.postMessage({ type: "askPosition", data: { uuid, playUri } }, "*");
         }
     }
 
