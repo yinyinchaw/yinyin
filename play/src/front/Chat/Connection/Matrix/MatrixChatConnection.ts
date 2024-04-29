@@ -13,7 +13,7 @@ import { MatrixClientWrapperInterface } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";
 import { SpaceUserExtended } from "../../../Space/SpaceFilter/SpaceFilter";
-import { AvailabilityStatus, ChatMemberData, PartialSpaceUser, SpaceUser } from "@workadventure/messages";
+import { AvailabilityStatus, ChatMember, ChatMemberData, ChatMembersAnswer, PartialSpaceUser } from "@workadventure/messages";
 import { KnownMembership } from "matrix-js-sdk/lib/@types/membership";
 
 export const defaultWoka =
@@ -128,22 +128,22 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         this.getWorldChatMembers().then((members) => {
             
             members.forEach((member) => {
-                if (!member.chatId) return;
-
-                this.userList.set(member.chatId, {
-                    availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
-                    avatarUrl: defaultWoka,
-                    id: member.chatId,
-                    roomName: undefined,
-                    playUri: undefined,
-                    username: member.wokaName,
-                    isAdmin: member.tags.includes("admin"),
-                    isMember: member.tags.includes("member"),
-                    uuid: undefined,
-                    color: defaultColor,
-                    spaceId: undefined,
-                });
+                if(member.chatId) 
+                    this.userList.set(member.chatId, {
+                        availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
+                        avatarUrl: defaultWoka,
+                        id: member.chatId,
+                        roomName: undefined,
+                        playUri: undefined,
+                        username: member.wokaName,
+                        isAdmin: member.tags.includes("admin"),
+                        isMember: member.tags.includes("member"),
+                        uuid: undefined,
+                        color: defaultColor,
+                        spaceId: undefined,
+                    });
             });
+
         });
     }
 
@@ -217,8 +217,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         const userToDisconnect = Array.from(this.userList.values()).filter(({ spaceId }) => spaceId === userId)[0];
 
         if (!userToDisconnect ||userToDisconnect.id ) return;
-
-
 
         this.userList.set(userToDisconnect.id, {
             id: userToDisconnect.id,
@@ -299,5 +297,31 @@ export class MatrixChatConnection implements ChatConnectionInterface {
 
         return undefined;
         
+    }
+
+    searchUsers(searchText: string): void {
+        
+        //Members
+        console.log('searchMember : ', searchText);
+
+        this.connection.queryChatMembers(searchText).then(({members}: ChatMembersAnswer)=>{
+            members.forEach((member: ChatMember) => {
+                if (!member.chatId || this.userList.has(member.chatId)) return;
+                this.userList.set(member.chatId, {
+                    availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
+                    avatarUrl: defaultWoka,
+                    id: member.chatId,
+                    roomName: undefined,
+                    playUri: undefined,
+                    username: member.wokaName,
+                    isAdmin: member.tags.includes("admin"),
+                    isMember: member.tags.includes("member"),
+                    uuid: undefined,
+                    color: defaultColor,
+                    spaceId: undefined,
+                });
+            });
+        });
+
     }
 }

@@ -3,13 +3,13 @@
     import UserList from "./UserList.svelte";
     import { ChatUser } from "../../Connection/ChatConnection";
     import { LL } from "../../../../i18n/i18n-svelte";
-    import { shownRoomListStore } from "../../Stores/ChatStore";
+    import { chatSearchBarValue, shownRoomListStore } from "../../Stores/ChatStore";
     import { ChevronUpIcon } from "svelte-feather-icons";
     import {  onMount } from "svelte";
 
-    export let searchText : string;
     const chat = gameManager.getCurrentGameScene().chatConnection;
     const DISCONNECTED_LABEL = 'disconnected'; 
+    const DISCONNECTED_USERS_LIMITATION = 200;
 
     onMount(() => {
         if($shownRoomListStore==="")
@@ -19,7 +19,7 @@
     $: userList = chat.userList;
     $: filterUsers = Array.from($userList)
         .map(([_,user])=>user)
-        .filter((user)=>(user.username)?user.username.toLocaleLowerCase().includes(searchText):false ) || [];
+        .filter((user)=>(user.username)?user.username.toLocaleLowerCase().includes($chatSearchBarValue):false ) || [];
 
     $: usersByRoom = filterUsers.reduce((acc,curr)=>{
         let room = curr.roomName ?? DISCONNECTED_LABEL;
@@ -34,7 +34,8 @@
 
     },new Map<string,ChatUser[]>()) as Map<string,ChatUser[]>;
 
-    $: disconnectedUsers   = usersByRoom.get(DISCONNECTED_LABEL);
+    
+    $: disconnectedUsers   = usersByRoom.get(DISCONNECTED_LABEL)?.slice(0,DISCONNECTED_USERS_LIMITATION);
     $: usersByRoom?.delete(DISCONNECTED_LABEL);
 
     $: onThisMapUsers = usersByRoom.get($LL.chat.userList.isHere());
@@ -71,7 +72,7 @@
                 </button>
             </div>
             {#if $shownRoomListStore === roomName}
-                <UserList userList={userInRoom} {searchText}/>  
+                <UserList userList={userInRoom}/>  
             {/if} 
         </div>
     {/if}

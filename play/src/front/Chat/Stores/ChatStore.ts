@@ -137,13 +137,13 @@ export const hasInProgressUploadingFile = derived([filesUploadStore], ([$filesUp
 export const connectionNotAuthorizedStore = writable<boolean>(false);
 export const connectionEstablishedStore = writable<boolean>(false);
 
-export const navChat = writable<string>("chat");
+export const navChat = writable<"chat"|"users">("chat");
 
 export const shownRoomListStore = writable<string>("");
 export const showChatZonesStore = writable<boolean>(false);
 export const showForumsStore = writable<boolean>(false);
 export const showTimelineStore = writable<boolean>(false);
-
+export const chatSearchBarValue = writable<string>("");
 export const selectedRoom = writable<ChatRoom | undefined>(undefined);
 
 export const loading = derived(

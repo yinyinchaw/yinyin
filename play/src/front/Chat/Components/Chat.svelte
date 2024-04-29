@@ -1,16 +1,60 @@
 <script lang="ts">
-    import { IconLoader3 } from "@tabler/icons-svelte";
+    import { IconBrandNodejs, IconLoader3 } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
-    import { navChat } from "../Stores/ChatStore";
+    import { chatSearchBarValue, navChat } from "../Stores/ChatStore";
     import RoomUserList from "./UserList/RoomUserList.svelte";
     import RoomList from "./RoomList.svelte";
+    import { CONNECTED_USER_FILTER_NAME, WORLD_SPACE_NAME } from "../../Space/Space";
+    import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 
-    const chat = gameManager.getCurrentGameScene().chatConnection;
+    const chat= gameManager.getCurrentGameScene().chatConnection;
+    const DONE_TYPING_INTERVAL = 2000;
     $: chatConnectionStatus = chat.connectionStatus;
 
     let searchValue = "";
+    let typingTimer : NodeJS.Timeout;
 
+    const handleKeyUp = ()=>{
+        if($navChat === "chat") return;
+        clearTimeout(typingTimer);
+        
+        typingTimer = setTimeout(()=>{
+            setConnectedUsersFilter(searchValue);
+            chat.searchUsers(searchValue);
+        },DONE_TYPING_INTERVAL);
+    }
+
+    const handleKeyDown = ()=>{
+        if($navChat === "chat") return;
+        clearTimeout(typingTimer);
+    }
+
+    const setConnectedUsersFilter = (searchText = "") =>{
+        const SpaceProvider = LocalSpaceProviderSingleton.getInstance();
+        if(!SpaceProvider)return;
+
+        const allWorldUserSpace = SpaceProvider.get(WORLD_SPACE_NAME);
+        const connectedUsersFilter = allWorldUserSpace.getSpaceFilter(CONNECTED_USER_FILTER_NAME);
+
+        if(searchText==="" && connectedUsersFilter.getFilterType()!=='spaceFilterEverybody'){
+            connectedUsersFilter.setFilter({
+                $case : "spaceFilterEverybody",
+                spaceFilterEverybody : {}
+        })
+        
+        return;
+    }
+
+        connectedUsersFilter.setFilter({
+            $case : "spaceFilterContainName",
+            spaceFilterContainName : {
+                value : searchValue
+            }
+        })
+
+
+    }
 </script>
 
 <div class="tw-flex tw-flex-col tw-gap-2 tw-h-full">
@@ -41,14 +85,16 @@
                 <input
                     class="wa-searchbar tw-block tw-text-white tw-w-full placeholder:tw-text-sm tw-rounded-3xl tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-border-solid tw-bg-transparent"
                     placeholder={$navChat === "users" ? $LL.chat.searchUser() : $LL.chat.searchChat()}
-                    bind:value={searchValue}
+                    on:keydown={handleKeyDown}
+                    on:keyup={handleKeyUp}
+                    bind:value={$chatSearchBarValue}
                 />
             </div>
         </div>
         {#if $navChat === "users"}
-            <RoomUserList searchText={searchValue}/>
+            <RoomUserList/>
         {:else}
-            <RoomList />
+            <RoomList/>
         {/if}
     {/if}
 </div>

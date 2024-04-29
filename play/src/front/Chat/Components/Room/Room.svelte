@@ -1,13 +1,19 @@
 <script lang="ts">
     import { ChatRoom } from "../../Connection/ChatConnection";
     import NotificationBadge from "../NotificationBadge.svelte";
-    import { selectedRoom } from "../../Stores/ChatStore";
+    import { chatSearchBarValue, selectedRoom } from "../../Stores/ChatStore";
     import Avatar from "../Avatar.svelte";
+    import highlightWords from "highlight-words";
 
     export let room: ChatRoom;
 
     let hasUnreadMessage = room.hasUnreadMessages
     let roomName = room.name
+
+    $: chunks = highlightWords({
+        text: $roomName.match(/\[\d*]/) ? $roomName.substring(0, $roomName.search(/\[\d*]/)) : $roomName,
+        query: $chatSearchBarValue,
+    });
 
 </script>
 
@@ -20,6 +26,9 @@
             <NotificationBadge type="warning" />
         {/if}
     </div>
-    <p class="tw-m-0">{$roomName}</p>
-
+    <p class="tw-m-0">
+        {#each chunks as chunk (chunk.key)}
+        <span class={`${chunk.match ? "tw-text-light-blue" : ""}  tw-cursor-default`}>{chunk.text}</span>
+        {/each}
+    </p>
 </div>

@@ -9,10 +9,9 @@
     import { AvailabilityStatus } from "@workadventure/messages";
     import highlightWords from "highlight-words";
     import { gameManager } from "../../../Phaser/Game/GameManager";
-    import { navChat, selectedRoom } from "../../Stores/ChatStore";
+    import { chatSearchBarValue, navChat, selectedRoom } from "../../Stores/ChatStore";
 
     export let user:ChatUser;
-    export let searchText : string;
 
     $: ({ id,availabilityStatus : userStatus, username = "",color,isAdmin,isMember,avatarUrl } = user);
 
@@ -25,7 +24,7 @@
 
     $: chunks = highlightWords({
         text: username.match(/\[\d*]/) ? username.substring(0, username.search(/\[\d*]/)) : username,
-        query: searchText,
+        query: $chatSearchBarValue,
     });
 
     function getNameOfAvailabilityStatus(status: AvailabilityStatus) {

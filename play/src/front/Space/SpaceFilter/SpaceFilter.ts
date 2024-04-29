@@ -22,6 +22,7 @@ export interface SpaceFilterInterface {
     updateUserData(userdata: Partial<SpaceUser>): void;
     setFilter(filter: Filter): void;
     getName(): string;
+    getFilterType(): "spaceFilterEverybody" | "spaceFilterContainName" | "spaceFilterLiveStreaming"| undefined;
     destroy(): void;
 }
 
@@ -250,6 +251,9 @@ export class SpaceFilter implements SpaceFilterInterface {
         });
     }
 
+    getFilterType(): "spaceFilterEverybody" | "spaceFilterContainName" | "spaceFilterLiveStreaming"| undefined {
+        return this.filter?.$case;
+    }
     destroy() {
         this.removeSpaceFilter({
             spaceName: this.spaceName,

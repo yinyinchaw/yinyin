@@ -3,13 +3,15 @@
     import { IconChevronDown, IconChevronRight, IconSquarePlus } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
-    import { selectedRoom } from "../Stores/ChatStore";
+    import { chatSearchBarValue, selectedRoom } from "../Stores/ChatStore";
     import Room from "./Room/Room.svelte";
     import RoomTimeline from "./Room/RoomTimeline.svelte";
     import AddRoomForm from "./Room/AddRoomForm.svelte";
     import RoomInvitation from "./Room/RoomInvitation.svelte";
+    import { get } from "svelte/store";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
+
 
     
     let displayDirectRooms = true;
@@ -32,10 +34,16 @@
     function toggleDisplayAddRoomForm() {
         displayAddRoomForm = !displayAddRoomForm;
     }
-
+    
     let directRooms = chat.directRooms
     let rooms = chat.rooms
     let roomInvitations = chat.invitations
+
+    const filterRoomByName = (roomName : string) : boolean => roomName.toLocaleLowerCase().includes($chatSearchBarValue)
+
+    $: filteredDirectRoom = $directRooms.filter(({name})=> filterRoomByName(get(name)))
+    $: filteredRooms = $rooms.filter(({name})=> filterRoomByName(get(name)))
+    $: filteredRoomInvitations = $roomInvitations.filter(({name})=> filterRoomByName(get(name)))
 
 
 </script>
@@ -52,7 +60,7 @@
         Invitations
     </button>
     {#if displayRoomInvitations}
-        {#each $roomInvitations as room (room.id)}
+        {#each filteredRoomInvitations as room (room.id)}
             <RoomInvitation {room} />
         {/each}
     {/if}
@@ -66,7 +74,7 @@
         {$LL.chat.people()}
     </button>
     {#if displayDirectRooms}
-        {#each $directRooms as room (room.id)}
+        {#each filteredDirectRoom as room (room.id)}
             <Room {room} />
         {/each}
     {/if}
@@ -90,7 +98,7 @@
 
 
     {#if displayRooms}
-        {#each $rooms as room (room.id)}
+        {#each filteredRooms as room (room.id)}
             <Room {room} />
         {/each}
     {/if}
