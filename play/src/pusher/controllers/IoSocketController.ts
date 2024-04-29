@@ -860,6 +860,10 @@ export class IoSocketController {
                             );
                             break;
                         }
+                        case "updateChatIdMessage" : {
+                            socketManager.handleUpdateChatId(message.message.updateChatIdMessage.email,message.message.updateChatIdMessage.chatId)
+                            break;
+                        }
                         case "queryMessage": {
                             try {
                                 const answerMessage: AnswerMessage = {

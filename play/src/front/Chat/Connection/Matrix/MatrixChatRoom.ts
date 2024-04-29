@@ -4,6 +4,7 @@ import { MediaEventContent, MediaEventInfo } from "matrix-js-sdk/lib/@types/medi
 import { ChatMessage, ChatRoom } from "../ChatConnection";
 import { KnownMembership } from "matrix-js-sdk/lib/@types/membership";
 import { MatrixChatMessage } from "./MatrixChatMessage";
+import { selectedChatMessageToReply } from "../../Stores/ChatStore";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -32,10 +33,6 @@ export class MatrixChatRoom implements ChatRoom {
     }
 
     startHandlingChatRoomEvents() {
-        this.matrixRoom.on(RoomEvent.TimelineRefresh,(event,room)=>{
-            console.log('from timelineRefresh',event?.getType())
-        });
-
         this.matrixRoom.on(RoomEvent.Timeline, (_, room) => {
             if (room !== undefined) {
                 this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);

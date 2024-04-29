@@ -103,6 +103,11 @@ message BanPlayerMessage {
   string banUserName = 2;
 }
 
+message UpdateChatIdMessage {
+  string email = 1;
+  string chatId = 2;
+}
+
 message EmotePromptMessage {
   string emote = 2;
 }
@@ -313,6 +318,7 @@ message ClientToServerMessage {
     MuteVideoParticipantIdMessage muteVideoParticipantIdMessage = 39;
     MuteVideoEveryBodyParticipantMessage muteVideoEveryBodyParticipantMessage = 40;
     BanPlayerMessage banPlayerMessage = 41;
+    UpdateChatIdMessage updateChatIdMessage = 42;
   }
 }
 

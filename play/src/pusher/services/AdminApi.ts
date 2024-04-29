@@ -1084,6 +1084,15 @@ class AdminApi implements AdminInterface {
         });
         return response.data;
     }
+
+    updateChatId(userIdentifier: string, chatId: string): void {
+        axios.put(`${ADMIN_API_URL}/api/members/${userIdentifier}/chatId`,{
+            chatId,
+            userIdentifier
+        }, {
+            headers: { Authorization: `${ADMIN_API_TOKEN}` },
+        });
+    }
 }
 
 export const adminApi = new AdminApi();

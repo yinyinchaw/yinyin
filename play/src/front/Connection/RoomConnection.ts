@@ -280,8 +280,7 @@ export class RoomConnection implements RoomConnection {
         }
         url += "&version=" + apiVersionHash;
         url += "&chatID=" + localUserStore.getChatId();
-        url += "&roomName=" + gameManager.currentStartedRoom.roomName
-
+        url += "&roomName=" + gameManager.currentStartedRoom.roomName;
 
         if (RoomConnection.websocketFactory) {
             this.socket = RoomConnection.websocketFactory(url);
@@ -1633,6 +1632,19 @@ export class RoomConnection implements RoomConnection {
         return answer.chatMembersAnswer;
     }
 
+    public emitUpdateChatId(email : string , chatId: string) {
+        if (chatId && email)
+            this.send({
+                message: {
+                    $case: "updateChatIdMessage",
+                    updateChatIdMessage: {
+                        email,
+                        chatId,
+                    },
+                },
+            });
+    }
+
     public emitMuteParticipantIdSpace(spaceName: string, participantId: string) {
         this.send({
             message: {
@@ -1700,7 +1712,6 @@ export class RoomConnection implements RoomConnection {
             },
         });
     }
-
 
     private resetPingTimeout(): void {
         if (this.timeout) {

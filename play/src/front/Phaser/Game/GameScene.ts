@@ -1533,16 +1533,16 @@ export class GameScene extends DirtyScene {
                         this.connection,
                         new MatrixClientWrapper(MATRIX_PUBLIC_URI)
                     );
+                    
+                    const chatId = localUserStore.getChatId();
+                    const email: string | null = localUserStore.getLocalUser()?.email || null;
+                    if (email && chatId) this.connection.emitUpdateChatId(email, chatId);
                 }
 
                 const spaceProvider = LocalSpaceProviderSingleton.getInstance(onConnect.connection.socket);
                 StreamSpaceWatcherSingleton.getInstance(onConnect.connection.socket);
 
-
-                
                 spaceProvider.add(WORLD_SPACE_NAME).watch(CONNECTED_USER_FILTER_NAME);
-
-
 
                 this.tryOpenMapEditorWithToolEditorParameter();
 

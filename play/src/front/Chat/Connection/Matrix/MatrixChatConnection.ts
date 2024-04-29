@@ -100,7 +100,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
                     this.roomList.delete(roomId);
                 }
                 if (membership === KnownMembership.Invite) {
-                    debugger;
                     const inviter = room.getDMInviter();
                     const newRoom =  new MatrixChatRoom(room);
                     if(inviter && this.userList.has(inviter)) newRoom.joinRoom();

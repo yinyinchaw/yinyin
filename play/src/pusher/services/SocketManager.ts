@@ -1553,7 +1553,13 @@ export class SocketManager implements ZoneEventListener {
             members,
         };
     }
+
+    handleUpdateChatId(email : string, chatId : string) : void{
+        adminService.updateChatId(email,chatId);
+    }
 }
+
+
 
 // Verify that the domain of the url in parameter is in the white list of embeddable domains defined in the .env file (EMBEDDED_DOMAINS_WHITELIST)
 const verifyUrlAsDomainInWhiteList = (url: string) => {
