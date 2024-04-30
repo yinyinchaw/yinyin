@@ -1,16 +1,19 @@
-import { MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
+import { EventType, IEventRelation, MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
+import { writable, Writable } from "svelte/store";
 import { ChatMessage, ChatMessageContent, ChatMessageType, ChatUser } from "../ChatConnection";
 import { MatrixChatUser } from "./MatrixChatUser";
 
 export class MatrixChatMessage implements ChatMessage {
     id: string;
-    content: ChatMessageContent;
+    content: Writable<ChatMessageContent>;
     sender: ChatUser | undefined;
     isMyMessage: boolean;
     date: Date | null;
     isQuotedMessage: boolean | undefined;
     quotedMessage: ChatMessage | undefined;
     type: ChatMessageType;
+    isDeleted: Writable<boolean>;
+    isModified: Writable<boolean>;
 
     constructor(
         private event: MatrixEvent,
@@ -25,6 +28,8 @@ export class MatrixChatMessage implements ChatMessage {
         this.isMyMessage = this.client.getUserId() === event.getSender();
         this.content = this.getMessageContent();
         this.isQuotedMessage = isQuotedMessage;
+        this.isDeleted = writable(this.getIsDeleted());
+        this.isModified = writable(this.getIsModified());
     }
 
     private getSender() {
@@ -37,22 +42,22 @@ export class MatrixChatMessage implements ChatMessage {
         return messageUser;
     }
 
-    private getMessageContent(): ChatMessageContent {
+    private getMessageContent(): Writable<ChatMessageContent> {
         const content = this.event.getOriginalContent();
         const quotedMessage = this.getQuotedMessage();
         if (quotedMessage !== undefined) {
             this.quotedMessage = quotedMessage;
-            return { body: content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, ""), url: undefined };
+            return writable({ body: content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, ""), url: undefined });
         }
 
         if (this.type !== "text") {
-            return {
+            return writable({
                 body: content.body,
                 url: this.client.mxcUrlToHttp(this.event.getOriginalContent().url) ?? undefined,
-            };
+            });
         }
 
-        return { body: content.body, url: undefined };
+        return writable({ body: content.body, url: undefined });
     }
 
     private getQuotedMessage() {
@@ -64,6 +69,14 @@ export class MatrixChatMessage implements ChatMessage {
             }
         }
         return;
+    }
+
+    private getIsDeleted() {
+        return this.event.isRedacted();
+    }
+
+    private getIsModified() {
+        return this.event.replacingEventId() !== undefined;
     }
 
     private mapMatrixMessageTypeToChatMessage() {
@@ -81,5 +94,33 @@ export class MatrixChatMessage implements ChatMessage {
                 return "video";
         }
         return "text";
+    }
+
+    remove() {
+        this.client.redactEvent(this.room.roomId, this.id).catch((error) => console.error(error));
+    }
+
+    async edit(newContent: string): Promise<void> {
+        const editRelation: IEventRelation = { rel_type: "m.replace", event_id: this.id };
+        try {
+            await this.client.sendEvent(this.room.roomId, EventType.RoomMessage, {
+                msgtype: "m.text",
+                "m.relates_to": editRelation,
+                "m.new_content": { msgtype: "m.text", body: newContent },
+                body: newContent,
+            });
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    }
+
+    public modifyContent(newContent: string) {
+        this.content.set({ body: newContent, url: undefined });
+        this.isModified.set(true);
+    }
+
+    public markAsRemoved() {
+        this.isDeleted.set(true);
     }
 }

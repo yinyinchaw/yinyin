@@ -1,13 +1,13 @@
 <script lang="ts">
+    import { Readable } from "svelte/store";
     import { ChatMessageContent } from "../../../Connection/ChatConnection";
 
-    export let content: ChatMessageContent;
-    const url = content.url;
+    export let content:Readable<ChatMessageContent>
 </script>
 
-{#if url !== undefined}
+{#if $content.url !== undefined}
     <video controls class="tw-w-full">
-        <source src={url} />
+        <source src={$content.url} />
     </video>
 {/if}
 

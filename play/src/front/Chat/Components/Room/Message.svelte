@@ -1,19 +1,21 @@
 <script lang="ts">
 
-    import { IconCornerDownRight } from "@tabler/icons-svelte";
+    import { IconCornerDownRight, IconTrash } from "@tabler/icons-svelte";
     import { ComponentType } from "svelte";
     import { ChatMessage, ChatMessageType } from "../../Connection/ChatConnection";
     import LL, { locale } from "../../../../i18n/i18n-svelte";
     import Avatar from "../Avatar.svelte";
+    import { selectedChatMessageToEdit } from "../../Stores/ChatStore";
     import MessageOptions from "./MessageOptions.svelte";
     import MessageImage from "./Message/MessageImage.svelte";
     import MessageText from "./Message/MessageText.svelte";
     import MessageFile from "./Message/MessageFile.svelte";
     import MessageAudioFile from "./Message/MessageAudioFile.svelte";
     import MessageVideoFile from "./Message/MessageVideoFile.svelte";
+    import MessageEdition from "./MessageEdition.svelte";
 
     export let message: ChatMessage;
-    const { sender, isMyMessage, date, content, quotedMessage, isQuotedMessage, type } = message;
+    const { id,sender, isMyMessage, date, content, quotedMessage, isQuotedMessage, type, isDeleted, isModified } = message;
 
     const messageType: { [key in ChatMessageType]: ComponentType } = {
         "image": MessageImage,
@@ -28,7 +30,7 @@
 <li class={`${isMyMessage && "tw-self-end tw-flex-row-reverse"}`}>
     <div class={`container-grid ${isMyMessage ? "tw-justify-end grid-container-inverted" : "tw-justify-start"}`}>
         <div
-            class={`messageHeader tw-text-gray-500 tw-text-xxs tw-p-0 tw-m-0 tw-flex tw-justify-between ${message.isMyMessage ? "tw-flex-row-reverse" : ""} tw-items-end`}
+            class={`messageHeader tw-text-gray-500 tw-text-xxs tw-p-0 tw-m-0 tw-flex tw-justify-between ${isMyMessage ? "tw-flex-row-reverse" : ""} tw-items-end`}
             hidden={isQuotedMessage}>
             <span>{isMyMessage ? "You" : sender?.username}</span>
             <span class={`tw-text-xxxs ${isMyMessage ? "tw-mr-1" : "tw-ml-1" }`}>{date?.toLocaleTimeString($locale, {
@@ -43,10 +45,17 @@
         {/if}
 
         <div class="message tw-bg-brand-blue tw-rounded-md tw-p-2">
-            {#if isMyMessage && content === undefined}
-                <MessageText content={{body: $LL.chat.messageDeletedByYou(), url:undefined}} />
+            {#if $isDeleted}
+                <p class="tw-p-0 tw-m-0 tw-text-xs tw-text-gray-500 tw-flex tw-items-center">
+                    <IconTrash size={12} /> {$LL.chat.messageDeleted()}</p>
             {:else}
                 <svelte:component this={messageType[type]} content={content} />
+                {#if $isModified}
+                    <p class="tw-text-gray-500 tw-text-xxxs tw-p-0 tw-m-0">(modified)</p>
+                {/if}
+                {#if $selectedChatMessageToEdit !== null && $selectedChatMessageToEdit.id === id}
+                    <MessageEdition message={$selectedChatMessageToEdit}/>
+                {/if}
             {/if}
         </div>
         {#if quotedMessage}

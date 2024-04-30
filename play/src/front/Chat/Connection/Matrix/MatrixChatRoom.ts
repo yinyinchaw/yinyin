@@ -1,10 +1,19 @@
-import { IContent, MatrixEvent, MsgType, NotificationCountType, ReceiptType, Room, RoomEvent } from "matrix-js-sdk";
+import {
+    IContent,
+    IRoomTimelineData,
+    MatrixEvent,
+    MsgType,
+    NotificationCountType,
+    ReceiptType,
+    Room,
+    RoomEvent,
+} from "matrix-js-sdk";
 import { get, Writable, writable } from "svelte/store";
 import { MediaEventContent, MediaEventInfo } from "matrix-js-sdk/lib/@types/media";
-import { ChatMessage, ChatRoom } from "../ChatConnection";
 import { KnownMembership } from "matrix-js-sdk/lib/@types/membership";
-import { MatrixChatMessage } from "./MatrixChatMessage";
+import { ChatRoom } from "../ChatConnection";
 import { selectedChatMessageToReply } from "../../Stores/ChatStore";
+import { MatrixChatMessage } from "./MatrixChatMessage";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -12,7 +21,7 @@ export class MatrixChatRoom implements ChatRoom {
     type!: "multiple" | "direct";
     hasUnreadMessages: Writable<boolean>;
     avatarUrl: string | undefined;
-    messages!: Writable<ChatMessage[]>;
+    messages!: Writable<Map<string, MatrixChatMessage>>;
     isInvited!: boolean;
     membersId: string[];
 
@@ -22,7 +31,7 @@ export class MatrixChatRoom implements ChatRoom {
         this.type = this.getMatrixRoomType();
         this.hasUnreadMessages = writable(matrixRoom.getUnreadNotificationCount() > 0);
         this.avatarUrl = matrixRoom.getAvatarUrl(matrixRoom.client.baseUrl, 24, 24, "scale") ?? undefined;
-        this.messages = writable(this.mapMatrixRoomMessageToChatMessage(matrixRoom));
+        this.messages = writable(this.initMatrixRoomMessages(matrixRoom));
         this.sendMessage = this.sendMessage.bind(this);
         this.isInvited = matrixRoom.hasMembershipState(matrixRoom.myUserId, "invite");
         this.membersId = [
@@ -30,25 +39,16 @@ export class MatrixChatRoom implements ChatRoom {
             ...matrixRoom.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
         ];
         this.startHandlingChatRoomEvents();
+        console.debug("Contruct room id : ", matrixRoom.roomId);
     }
 
-    startHandlingChatRoomEvents() {
-        this.matrixRoom.on(RoomEvent.Timeline, (_, room) => {
-            if (room !== undefined) {
-                this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);
-                this.messages.set(this.mapMatrixRoomMessageToChatMessage(room));
-                this.membersId = [
-                    ...room.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
-                    ...room.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
-                ];
-            }
-        });
-        this.matrixRoom.on(RoomEvent.Name, (room) => {
-            this.name.set(room.name);
-        });
+    private startHandlingChatRoomEvents() {
+        this.matrixRoom.on(RoomEvent.Timeline, this.onRoomTimeline.bind(this));
+        this.matrixRoom.on(RoomEvent.Name, this.onRoomName.bind(this));
+        this.matrixRoom.on(RoomEvent.Redaction, this.onRoomRedaction.bind(this));
     }
 
-    getMatrixRoomType() {
+    private getMatrixRoomType() {
         const dmInviter = this.matrixRoom.getDMInviter();
         if (dmInviter !== undefined) {
             return "direct";
@@ -58,37 +58,110 @@ export class MatrixChatRoom implements ChatRoom {
             : "multiple";
     }
 
-    static replayMatrixRoomMessageEvents(matrixRoom: Room): MatrixEvent[] {
+    private onRoomTimeline(
+        event: MatrixEvent,
+        room: Room | undefined,
+        toStartOfTimeline: boolean | undefined,
+        _: boolean,
+        data: IRoomTimelineData
+    ) {
+        //Only get realtime event
+        /*if (toStartOfTimeline || !data || !data.liveEvent) {
+            return;
+        }*/
+        if (room !== undefined) {
+            this.hasUnreadMessages.set(room.getUnreadNotificationCount() > 0);
+            if (event.getType() === "m.room.message") {
+                if (this.isEventReplacingExistingOne(event)) {
+                    this.handleMessageModification(event);
+                } else {
+                    this.handleNewMessage(event);
+                }
+            }
+            this.membersId = [
+                ...room.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
+                ...room.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
+            ];
+        }
+    }
+
+    private onRoomName(room: Room) {
+        this.name.set(room.name);
+    }
+
+    private onRoomRedaction(event: MatrixEvent) {
+        this.handleMessageDeletion(event);
+    }
+
+    private handleNewMessage(event: MatrixEvent) {
+        this.messages.update((existingMessages) =>
+            existingMessages.set(
+                event.getId() ?? "",
+                new MatrixChatMessage(event, this.matrixRoom.client, this.matrixRoom)
+            )
+        );
+    }
+
+    private handleMessageModification(event: MatrixEvent) {
+        const eventRelation = event.getRelation();
+        if (eventRelation) {
+            const event_id = eventRelation.event_id;
+            if (event_id) {
+                const messageToUpdate = get(this.messages).get(event_id);
+                if (messageToUpdate !== undefined) {
+                    messageToUpdate.modifyContent(event.getOriginalContent()["m.new_content"].body);
+                }
+            }
+        }
+    }
+
+    private handleMessageDeletion(event: MatrixEvent) {
+        const sourceEventId = event.getAssociatedId();
+        if (sourceEventId !== undefined) {
+            const messageToUpdate = get(this.messages).get(sourceEventId);
+            if (messageToUpdate !== undefined) {
+                messageToUpdate.markAsRemoved();
+            }
+        }
+    }
+
+    private replayMatrixRoomTimelineForMessages(matrixRoom: Room): MatrixEvent[] {
         return matrixRoom
             .getLiveTimeline()
             .getEvents()
             .filter((event) => event.getType() === "m.room.message")
-            .reduce(replayMessageModifications(), []);
-
-        function replayMessageModifications() {
-            return (events: MatrixEvent[], event: MatrixEvent) => {
-                const eventRelation = event.getRelation();
-                if (eventRelation?.rel_type === "m.replace") {
-                    const indexOfEventToReplace = events.findIndex(
-                        (eventToReplace) => eventToReplace.getId() === eventRelation.event_id
-                    );
-                    if (indexOfEventToReplace !== -1) {
-                        events[indexOfEventToReplace].getOriginalContent().formatted_body =
-                            event.getOriginalContent()["m.new_content"].formatted_body;
-                        events[indexOfEventToReplace].getOriginalContent().body =
-                            event.getOriginalContent()["m.new_content"].body;
-                        return events;
-                    }
-                }
-                return events.concat(event);
-            };
-        }
+            .reduce(this.applyRoomMessagesModifications(), []);
     }
 
-    private mapMatrixRoomMessageToChatMessage(matrixRoom: Room): MatrixChatMessage[] {
-        return MatrixChatRoom.replayMatrixRoomMessageEvents(matrixRoom).map(
-            (event) => new MatrixChatMessage(event, matrixRoom.client, matrixRoom)
+    private applyRoomMessagesModifications() {
+        return (events: MatrixEvent[], event: MatrixEvent) => {
+            if (this.isEventReplacingExistingOne(event)) {
+                const indexOfEventToReplace = events.findIndex(
+                    (eventToReplace) => eventToReplace.getId() === event.getRelation()?.event_id
+                );
+                if (indexOfEventToReplace !== -1) {
+                    events[indexOfEventToReplace].getOriginalContent().formatted_body =
+                        event.getOriginalContent()["m.new_content"].formatted_body;
+                    events[indexOfEventToReplace].getOriginalContent().body =
+                        event.getOriginalContent()["m.new_content"].body;
+                }
+                return events;
+            }
+            return events.concat(event);
+        };
+    }
+
+    private isEventReplacingExistingOne(event: MatrixEvent): boolean {
+        const eventRelation = event.getRelation();
+        return eventRelation?.rel_type === "m.replace";
+    }
+
+    private initMatrixRoomMessages(matrixRoom: Room) {
+        const messages = new Map<string, MatrixChatMessage>();
+        this.replayMatrixRoomTimelineForMessages(matrixRoom).forEach((event, index) =>
+            messages.set(event.getId() ?? index.toString(), new MatrixChatMessage(event, matrixRoom.client, matrixRoom))
         );
+        return messages;
     }
 
     setTimelineAsRead() {
@@ -128,14 +201,6 @@ export class MatrixChatRoom implements ChatRoom {
     async sendFiles(files: FileList) {
         try {
             await Promise.allSettled(Array.from(files).map((file) => this.sendFile(file)));
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    removeMessage(messageId: string) {
-        try {
-            this.matrixRoom.removeEvent(messageId);
         } catch (error) {
             console.error(error);
         }

@@ -43,13 +43,15 @@
     onDestroy(() => {
         selectedChatChatMessageToReplyUnsubscriber();
     });
+
+    $: quotedMessageContent = $selectedChatMessageToReply?.content
 </script>
 
 
 {#if $selectedChatMessageToReply !== null}
     <div class="tw-flex tw-p-2 tw-items-center tw-gap-1">
         <p class="tw-bg-brand-blue tw-rounded-md tw-p-2 tw-text-xs tw-m-0"
-           style:overflow-wrap="anywhere">{$selectedChatMessageToReply.content.body}</p>
+           style:overflow-wrap="anywhere">{$quotedMessageContent?.body}</p>
         <button class="tw-p-0 tw-m-0" on:click={unselectChatMessageToReply}>
             <IconCircleX />
         </button>

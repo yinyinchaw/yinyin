@@ -169,3 +169,4 @@ export const showPart = derived(
 );
 
 export const selectedChatMessageToReply = writable<NewChatMessage | null>(null);
+export const selectedChatMessageToEdit = writable<NewChatMessage | null>(null);

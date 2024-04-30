@@ -1,7 +1,7 @@
-import { MatrixClient, User, UserEvent,SetPresence } from "matrix-js-sdk";
+import { MatrixClient, SetPresence, User, UserEvent } from "matrix-js-sdk";
 import { writable, Writable } from "svelte/store";
-import { ChatUser } from "../ChatConnection";
 import { AvailabilityStatus } from "@workadventure/messages";
+import { ChatUser } from "../ChatConnection";
 
 export class MatrixChatUser implements ChatUser {
     id!: string;
@@ -9,12 +9,12 @@ export class MatrixChatUser implements ChatUser {
     username: string | undefined;
     avatarUrl: string | null;
     roomName: string | undefined;
-    playUri:string |undefined;
+    playUri: string | undefined;
     isAdmin = false;
     isMember = false;
     uuid = undefined;
-    color : string | undefined = undefined;
-    spaceId : number | undefined;
+    color: string | undefined = undefined;
+    spaceId: number | undefined;
 
     constructor(private matrixChatUser: User, private matrixClient: MatrixClient) {
         this.id = matrixChatUser.userId;
@@ -23,7 +23,6 @@ export class MatrixChatUser implements ChatUser {
         this.availabilityStatus = writable(this.mapMatrixPresenceToAvailabilityStatus(matrixChatUser.presence));
         this.startHandlingChatUserEvent();
     }
-    
 
     startHandlingChatUserEvent() {
         this.matrixChatUser.on(UserEvent.Presence, (_, user) => {
@@ -31,16 +30,16 @@ export class MatrixChatUser implements ChatUser {
         });
     }
 
-    private mapMatrixPresenceToAvailabilityStatus(presence : string = SetPresence.Offline): AvailabilityStatus{
-        switch(presence){
+    private mapMatrixPresenceToAvailabilityStatus(presence: string = SetPresence.Offline): AvailabilityStatus {
+        switch (presence) {
             case SetPresence.Offline:
                 return AvailabilityStatus.UNCHANGED;
             case SetPresence.Online:
                 return AvailabilityStatus.ONLINE;
             case SetPresence.Unavailable:
                 return AvailabilityStatus.AWAY;
-            default : 
-            //TODO : Create Error
+            default:
+                //TODO : Create Error
                 throw new Error(`Do not handle the status ${presence}`);
         }
     }

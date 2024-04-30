@@ -25,10 +25,9 @@ export interface ChatRoom {
     type: "direct" | "multiple";
     hasUnreadMessages: Readable<boolean>;
     avatarUrl: string | undefined;
-    messages: Readable<ChatMessage[]>;
+    messages: Readable<Map<string, ChatMessage>>;
     sendMessage: (message: string) => void;
     sendFiles: (files: FileList) => Promise<void>;
-    removeMessage: (messageId: string) => void;
     isInvited: boolean;
     setTimelineAsRead: () => void;
     membersId: string[];
@@ -39,12 +38,16 @@ export interface ChatRoom {
 export interface ChatMessage {
     id: string;
     sender: ChatUser | undefined;
-    content: ChatMessageContent;
+    content: Readable<ChatMessageContent>;
     isMyMessage: boolean;
     isQuotedMessage: boolean | undefined;
     date: Date | null;
     quotedMessage: ChatMessage | undefined;
     type: ChatMessageType;
+    remove: () => void;
+    edit: (newContent: string) => Promise<void>;
+    isDeleted: Readable<boolean>;
+    isModified: Readable<boolean>;
 }
 
 export type ChatMessageType = "text" | "image" | "file" | "audio" | "video";

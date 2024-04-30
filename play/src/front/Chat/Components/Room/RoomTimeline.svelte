@@ -39,10 +39,10 @@
         <IconArrowLeft />
     </button>
     <ul class="tw-list-none tw-p-0 tw-flex-1 tw-overflow-auto tw-flex tw-flex-col">
-        {#if $messages.length === 0}
+        {#if $messages.size === 0}
             <p class="tw-self-center tw-text-md tw-text-gray-500">No message</p>
         {/if}
-        {#each $messages as message (message.id)}
+        {#each [...$messages] as [_,message] (message.id)}
             <Message {message} />
         {/each}
         <li bind:this={lastMessageAnchor} />
