@@ -317,4 +317,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             });
         });
     }
+
+    destroy(): void {
+        this.client.stopClient();
+    }
 }

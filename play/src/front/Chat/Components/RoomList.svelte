@@ -39,11 +39,9 @@
     let rooms = chat.rooms
     let roomInvitations = chat.invitations
 
-    const filterRoomByName = (roomName : string) : boolean => roomName.toLocaleLowerCase().includes($chatSearchBarValue)
-
-    $: filteredDirectRoom = $directRooms.filter(({name})=> filterRoomByName(get(name)))
-    $: filteredRooms = $rooms.filter(({name})=> filterRoomByName(get(name)))
-    $: filteredRoomInvitations = $roomInvitations.filter(({name})=> filterRoomByName(get(name)))
+    $: filteredDirectRoom = $directRooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
+    $: filteredRooms = $rooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
+    $: filteredRoomInvitations = $roomInvitations.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
 
 
 </script>
