@@ -14,6 +14,8 @@ import { KnownMembership } from "matrix-js-sdk/lib/@types/membership";
 import { ChatRoom } from "../ChatConnection";
 import { selectedChatMessageToReply } from "../../Stores/ChatStore";
 import { MatrixChatMessage } from "./MatrixChatMessage";
+import { MapStore } from "@workadventure/store-utils";
+import { MatrixChatMessageReaction } from "./MatrixChatMessageReaction";
 
 export class MatrixChatRoom implements ChatRoom {
     id!: string;
@@ -24,6 +26,7 @@ export class MatrixChatRoom implements ChatRoom {
     messages!: Writable<Map<string, MatrixChatMessage>>;
     isInvited!: boolean;
     membersId: string[];
+    messageReactions: MapStore<string, MapStore<string, MatrixChatMessageReaction>>;
 
     constructor(private matrixRoom: Room) {
         this.id = matrixRoom.roomId;
@@ -38,24 +41,15 @@ export class MatrixChatRoom implements ChatRoom {
             ...matrixRoom.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
             ...matrixRoom.getMembersWithMembership(KnownMembership.Join).map((member) => member.userId),
         ];
+        this.messageReactions = new MapStore<string, MapStore<string, MatrixChatMessageReaction>>();
+        this.initMatrixRoomMessageReactions();
         this.startHandlingChatRoomEvents();
-        console.debug("Contruct room id : ", matrixRoom.roomId);
     }
 
     private startHandlingChatRoomEvents() {
         this.matrixRoom.on(RoomEvent.Timeline, this.onRoomTimeline.bind(this));
         this.matrixRoom.on(RoomEvent.Name, this.onRoomName.bind(this));
         this.matrixRoom.on(RoomEvent.Redaction, this.onRoomRedaction.bind(this));
-    }
-
-    private getMatrixRoomType() {
-        const dmInviter = this.matrixRoom.getDMInviter();
-        if (dmInviter !== undefined) {
-            return "direct";
-        }
-        return this.matrixRoom.getMembers().some((member) => member.getDMInviter() !== undefined)
-            ? "direct"
-            : "multiple";
     }
 
     private onRoomTimeline(
@@ -77,6 +71,9 @@ export class MatrixChatRoom implements ChatRoom {
                 } else {
                     this.handleNewMessage(event);
                 }
+            }
+            if (event.getType() === "m.reaction") {
+                this.handleNewMessageReaction(event);
             }
             this.membersId = [
                 ...room.getMembersWithMembership(KnownMembership.Invite).map((member) => member.userId),
@@ -125,6 +122,39 @@ export class MatrixChatRoom implements ChatRoom {
         }
     }
 
+    private handleNewMessageReaction(event: MatrixEvent) {
+        const reactionEvent = this.getReactionEvent(event);
+        if (reactionEvent !== undefined) {
+            const { messageId, reactionKey } = reactionEvent;
+            const existingMessageWithReactions = this.messageReactions.get(messageId);
+            if (existingMessageWithReactions) {
+                const existingMessageReaction = existingMessageWithReactions.get(reactionKey);
+                if (existingMessageReaction) {
+                    existingMessageReaction.addUser(event.getSender());
+                    return;
+                }
+                existingMessageWithReactions.set(reactionKey, new MatrixChatMessageReaction(this.matrixRoom, event));
+                return;
+            }
+            const newMessageReactionMap = new MapStore<string, MatrixChatMessageReaction>();
+            newMessageReactionMap.set(reactionKey, new MatrixChatMessageReaction(this.matrixRoom, event));
+            this.messageReactions.set(messageId, newMessageReactionMap);
+        }
+    }
+
+    private isEventReplacingExistingOne(event: MatrixEvent): boolean {
+        const eventRelation = event.getRelation();
+        return eventRelation?.rel_type === "m.replace";
+    }
+
+    private initMatrixRoomMessages(matrixRoom: Room) {
+        const messages = new Map<string, MatrixChatMessage>();
+        this.replayMatrixRoomTimelineForMessages(matrixRoom).forEach((event, index) =>
+            messages.set(event.getId() ?? index.toString(), new MatrixChatMessage(event, matrixRoom.client, matrixRoom))
+        );
+        return messages;
+    }
+
     private replayMatrixRoomTimelineForMessages(matrixRoom: Room): MatrixEvent[] {
         return matrixRoom
             .getLiveTimeline()
@@ -151,17 +181,26 @@ export class MatrixChatRoom implements ChatRoom {
         };
     }
 
-    private isEventReplacingExistingOne(event: MatrixEvent): boolean {
-        const eventRelation = event.getRelation();
-        return eventRelation?.rel_type === "m.replace";
+    private initMatrixRoomMessageReactions() {
+        this.matrixRoom
+            .getLiveTimeline()
+            .getEvents()
+            .filter((event) => event.getType() === "m.reaction")
+            .forEach(this.handleNewMessageReaction.bind(this));
     }
 
-    private initMatrixRoomMessages(matrixRoom: Room) {
-        const messages = new Map<string, MatrixChatMessage>();
-        this.replayMatrixRoomTimelineForMessages(matrixRoom).forEach((event, index) =>
-            messages.set(event.getId() ?? index.toString(), new MatrixChatMessage(event, matrixRoom.client, matrixRoom))
-        );
-        return messages;
+    private getReactionEvent(event: MatrixEvent) {
+        const relation = event.getRelation();
+        if (relation) {
+            if (relation.rel_type === "m.annotation") {
+                const targetEventId = relation.event_id;
+                const reactionKey = relation.key;
+                if (targetEventId !== undefined && reactionKey !== undefined) {
+                    return { messageId: targetEventId, reactionKey };
+                }
+            }
+        }
+        return;
     }
 
     setTimelineAsRead() {
@@ -196,6 +235,24 @@ export class MatrixChatRoom implements ChatRoom {
         if (selectedChatMessageIDToReply !== undefined) {
             content["m.relates_to"] = { "m.in_reply_to": { event_id: selectedChatMessageIDToReply } };
         }
+    }
+
+    joinRoom(): void {
+        this.matrixRoom.client.joinRoom(this.id).catch((error) => console.error("Unable to join", error));
+    }
+
+    leaveRoom(): void {
+        this.matrixRoom.client.leave(this.id).catch((error) => console.error("Unable to leave", error));
+    }
+
+    private getMatrixRoomType() {
+        const dmInviter = this.matrixRoom.getDMInviter();
+        if (dmInviter !== undefined) {
+            return "direct";
+        }
+        return this.matrixRoom.getMembers().some((member) => member.getDMInviter() !== undefined)
+            ? "direct"
+            : "multiple";
     }
 
     async sendFiles(files: FileList) {
@@ -240,13 +297,5 @@ export class MatrixChatRoom implements ChatRoom {
         } else {
             return MsgType.File;
         }
-    }
-
-    joinRoom(): void {
-        this.matrixRoom.client.joinRoom(this.id).catch((error) => console.error("Unable to join", error));
-    }
-
-    leaveRoom(): void {
-        this.matrixRoom.client.leave(this.id).catch((error) => console.error("Unable to leave", error));
     }
 }

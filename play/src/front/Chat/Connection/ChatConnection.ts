@@ -3,6 +3,7 @@ import { AtLeast } from "@workadventure/map-editor";
 import { RoomConnection } from "../../Connection/RoomConnection";
 import { SpaceUserExtended } from "../../Space/SpaceFilter/SpaceFilter";
 import { AvailabilityStatus, PartialSpaceUser } from "@workadventure/messages";
+import { MapStore } from "@workadventure/store-utils";
 
 export interface ChatUser {
     id: string;
@@ -16,7 +17,7 @@ export interface ChatUser {
     isMember?: boolean;
     visitCardUrl?: string;
     color: string | undefined;
-    spaceId : number | undefined;
+    spaceId: number | undefined;
 }
 
 export interface ChatRoom {
@@ -26,6 +27,7 @@ export interface ChatRoom {
     hasUnreadMessages: Readable<boolean>;
     avatarUrl: string | undefined;
     messages: Readable<Map<string, ChatMessage>>;
+    messageReactions: MapStore<string, MapStore<string, ChatMessageReaction>>;
     sendMessage: (message: string) => void;
     sendFiles: (files: FileList) => Promise<void>;
     isInvited: boolean;
@@ -50,6 +52,12 @@ export interface ChatMessage {
     isModified: Readable<boolean>;
 }
 
+export interface ChatMessageReaction {
+    key: string;
+    users: MapStore<string, ChatUser>;
+    react: () => void;
+}
+
 export type ChatMessageType = "text" | "image" | "file" | "audio" | "video";
 export type ChatMessageContent = { body: string; url: string | undefined };
 
@@ -71,13 +79,13 @@ export interface ChatConnectionInterface {
     invitations: Readable<ChatRoom[]>;
     addUserFromSpace(user: SpaceUserExtended): void;
     updateUserFromSpace(user: PartialSpaceUser): void;
-    disconnectSpaceUser(userId:number):void
+    disconnectSpaceUser(userId: number): void;
     sendBan: (id: string) => void;
-    createRoom : (roomOptions : CreateRoomOptions) => Promise<{room_id: string;}>;
-    createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
-    getDirectRoomFor(uuserChatId : string): ChatRoom | undefined;
-    searchUsers(searchText : string):void;
-    destroy():void;
+    createRoom: (roomOptions: CreateRoomOptions) => Promise<{ room_id: string }>;
+    createDirectRoom(userChatId: string): Promise<ChatRoom | undefined>;
+    getDirectRoomFor(uuserChatId: string): ChatRoom | undefined;
+    searchUsers(searchText: string): void;
+    destroy(): void;
 }
 
 export type Connection = AtLeast<RoomConnection, "queryChatMembers">;

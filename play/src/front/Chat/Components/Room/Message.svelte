@@ -2,7 +2,7 @@
 
     import { IconCornerDownRight, IconTrash } from "@tabler/icons-svelte";
     import { ComponentType } from "svelte";
-    import { ChatMessage, ChatMessageType } from "../../Connection/ChatConnection";
+    import { ChatMessage, ChatMessageReaction, ChatMessageType } from "../../Connection/ChatConnection";
     import LL, { locale } from "../../../../i18n/i18n-svelte";
     import Avatar from "../Avatar.svelte";
     import { selectedChatMessageToEdit } from "../../Stores/ChatStore";
@@ -13,9 +13,25 @@
     import MessageAudioFile from "./Message/MessageAudioFile.svelte";
     import MessageVideoFile from "./Message/MessageVideoFile.svelte";
     import MessageEdition from "./MessageEdition.svelte";
+    import { MapStore } from "@workadventure/store-utils";
+    import MessageReactions from "./MessageReactions.svelte";
+
 
     export let message: ChatMessage;
-    const { id,sender, isMyMessage, date, content, quotedMessage, isQuotedMessage, type, isDeleted, isModified } = message;
+    export let reactions: MapStore<string, ChatMessageReaction> | undefined;
+
+    const {
+        id,
+        sender,
+        isMyMessage,
+        date,
+        content,
+        quotedMessage,
+        isQuotedMessage,
+        type,
+        isDeleted,
+        isModified
+    } = message;
 
     const messageType: { [key in ChatMessageType]: ComponentType } = {
         "image": MessageImage,
@@ -54,7 +70,10 @@
                     <p class="tw-text-gray-500 tw-text-xxxs tw-p-0 tw-m-0">(modified)</p>
                 {/if}
                 {#if $selectedChatMessageToEdit !== null && $selectedChatMessageToEdit.id === id}
-                    <MessageEdition message={$selectedChatMessageToEdit}/>
+                    <MessageEdition message={$selectedChatMessageToEdit} />
+                {/if}
+                {#if reactions!==undefined}
+                    <MessageReactions reactions={reactions}/>
                 {/if}
             {/if}
         </div>
@@ -65,7 +84,7 @@
             </div>
         {/if}
     </div>
-    {#if !isQuotedMessage}
+    {#if !isQuotedMessage && !$isDeleted}
         <div
             class={`options tw-bg-white/30 tw-backdrop-blur-sm tw-p-1 tw-rounded-md ${!isMyMessage ? "tw-left-6" : ""}`}>
             <MessageOptions message={message} />

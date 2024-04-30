@@ -25,12 +25,13 @@
         lastMessageAnchor.scrollIntoView();
     }
 
-    function goBackAndClearSelectedChatMessage(){
+    function goBackAndClearSelectedChatMessage() {
         selectedChatMessageToReply.set(null);
-        selectedRoom.set(undefined)
+        selectedRoom.set(undefined);
     }
 
     let messages = room?.messages;
+    let messageReaction = room?.messageReactions;
 
 </script>
 
@@ -42,8 +43,8 @@
         {#if $messages.size === 0}
             <p class="tw-self-center tw-text-md tw-text-gray-500">No message</p>
         {/if}
-        {#each [...$messages] as [_,message] (message.id)}
-            <Message {message} />
+        {#each [...$messages] as [messageId, message] (messageId)}
+            <Message {message} reactions={$messageReaction.get(messageId)} />
         {/each}
         <li bind:this={lastMessageAnchor} />
     </ul>

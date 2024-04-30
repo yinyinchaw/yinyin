@@ -28,7 +28,7 @@ export const defaultColor = "#626262";
 
 export class MatrixChatConnection implements ChatConnectionInterface {
     private client!: MatrixClient;
-    private readonly roomList: MapStore<string, MatrixChatRoom>;
+    private readonly roomList: MapStore<string, ChatRoom>;
     connectionStatus: Writable<ConnectionStatus>;
     directRooms: Readable<ChatRoom[]>;
     invitations: Readable<ChatRoom[]>;
@@ -38,7 +38,7 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     constructor(private connection: Connection, matrixClientWrapper: MatrixClientWrapperInterface) {
         this.connectionStatus = writable("CONNECTING");
         this.userList = new MapStore<string, ChatUser>();
-        this.roomList = new MapStore<string, MatrixChatRoom>();
+        this.roomList = new MapStore<string, ChatRoom>();
 
         this.directRooms = derived(this.roomList, (roomList) => {
             return Array.from(roomList.values()).filter((room) => !room.isInvited && room.type === "direct");

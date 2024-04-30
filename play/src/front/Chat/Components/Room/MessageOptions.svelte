@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { IconArrowBackUp, IconArrowDown, IconPencil, IconTrash } from "@tabler/icons-svelte";
+    import { IconArrowBackUp, IconArrowDown, IconMoodSmile, IconPencil, IconTrash } from "@tabler/icons-svelte";
     import { ChatMessage } from "../../Connection/ChatConnection";
     import { selectedChatMessageToEdit, selectedChatMessageToReply } from "../../Stores/ChatStore";
 
@@ -34,7 +34,10 @@
     <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={replyToMessage}>
         <IconArrowBackUp size={16} />
     </button>
-    {#if isMyMessage && $isDeleted === false }
+    <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={()=>console.debug("not implemented yet")}>
+        <IconMoodSmile size={16} />
+    </button>
+    {#if isMyMessage }
         <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={selectMessageToEdit}>
             <IconPencil size={16} />
         </button>
@@ -42,5 +45,6 @@
     <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={removeMessage}>
         <IconTrash size={16} />
     </button>
+
 
 </div>
