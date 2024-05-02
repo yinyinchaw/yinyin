@@ -139,10 +139,12 @@ export class SpaceFilter implements SpaceFilterInterface {
             },
         };
 
+        const wokaBase64 = await CharacterLayerManager.wokaBase64(user.characterTextures) ;
+        
         return {
             ...user,
             wokaPromise: undefined,
-            getWokaBase64: await CharacterLayerManager.wokaBase64(user.characterTextures) ,
+            getWokaBase64: wokaBase64 ,
             updateSubject: new Subject<{
                 newUser: SpaceUserExtended;
                 changes: PartialSpaceUser;

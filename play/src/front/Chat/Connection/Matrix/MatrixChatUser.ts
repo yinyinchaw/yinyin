@@ -13,34 +13,13 @@ export class MatrixChatUser implements ChatUser {
     isAdmin = false;
     isMember = false;
     uuid = undefined;
-    color: string | undefined = undefined;
-    spaceId: number | undefined;
-
-    constructor(private matrixChatUser: User, private matrixClient: MatrixClient) {
+    color : string | undefined = undefined;
+    spaceId : number | undefined;
+    
+    constructor(private matrixChatUser: User) {
         this.id = matrixChatUser.userId;
         this.username = matrixChatUser.displayName;
-        this.avatarUrl = matrixClient.mxcUrlToHttp(matrixChatUser.avatarUrl ?? "", 48, 48);
-        this.availabilityStatus = writable(this.mapMatrixPresenceToAvailabilityStatus(matrixChatUser.presence));
-        this.startHandlingChatUserEvent();
-    }
-
-    startHandlingChatUserEvent() {
-        this.matrixChatUser.on(UserEvent.Presence, (_, user) => {
-            this.availabilityStatus.set(this.mapMatrixPresenceToAvailabilityStatus(user.presence));
-        });
-    }
-
-    private mapMatrixPresenceToAvailabilityStatus(presence: string = SetPresence.Offline): AvailabilityStatus {
-        switch (presence) {
-            case SetPresence.Offline:
-                return AvailabilityStatus.UNCHANGED;
-            case SetPresence.Online:
-                return AvailabilityStatus.ONLINE;
-            case SetPresence.Unavailable:
-                return AvailabilityStatus.AWAY;
-            default:
-                //TODO : Create Error
-                throw new Error(`Do not handle the status ${presence}`);
-        }
+        this.avatarUrl = matrixChatUser.avatarUrl ?? null;
+        this.availabilityStatus = writable(AvailabilityStatus.UNCHANGED);
     }
 }

@@ -18,7 +18,7 @@
 
     const isInTheSameMap = (user.playUri === roomUrl )
 
-    const userList : Readable<Map<string, ChatUser>> = chatConnection.userList;
+    const userList : Readable<Map<string, ChatUser>> = chatConnection.userConnected;
 
     const iAmAdmin = $userList.get(localUserStore.getChatId()??"")?.isAdmin;
 
@@ -86,7 +86,9 @@
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <span
                 class="ban wa-dropdown-item tw-text-pop-red"
-                on:click|stopPropagation={() => chatConnection.sendBan(user.id)}
+                on:click|stopPropagation={() =>{ 
+                    if(user.username) chatConnection.sendBan(user.id,user.username);
+                }}
                 ><SlashIcon size="13" /> {$LL.chat.ban.title()}</span
             >
         {/if}

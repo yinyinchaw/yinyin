@@ -1,5 +1,6 @@
-import { ClientEvent, MatrixClient, Room, RoomEvent, SyncState, Visibility } from "matrix-js-sdk";
 import { derived, Readable, writable, Writable } from "svelte/store";
+import { ClientEvent, MatrixClient, RoomEvent, SyncState, UserEvent, Visibility } from "matrix-js-sdk";
+import { derived, get, Readable, writable, Writable } from "svelte/store";
 import { MapStore } from "@workadventure/store-utils";
 import {
     AvailabilityStatus,
@@ -26,6 +27,8 @@ export const defaultWoka =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
 export const defaultColor = "#626262";
 
+type UUID = string;
+type chatId = string;
 export class MatrixChatConnection implements ChatConnectionInterface {
     private client!: MatrixClient;
     private readonly roomList: MapStore<string, ChatRoom>;
@@ -33,12 +36,12 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     directRooms: Readable<ChatRoom[]>;
     invitations: Readable<ChatRoom[]>;
     rooms: Readable<ChatRoom[]>;
-    userList: MapStore<string, ChatUser>;
+    userConnected: MapStore<UUID, ChatUser> = new MapStore<UUID, ChatUser>();
+    userDisconnected: MapStore<chatId, ChatUser> = new MapStore<chatId, ChatUser>();
 
     constructor(private connection: Connection, matrixClientWrapper: MatrixClientWrapperInterface) {
         this.connectionStatus = writable("CONNECTING");
-        this.userList = new MapStore<string, ChatUser>();
-        this.roomList = new MapStore<string, ChatRoom>();
+        this.roomList = new MapStore<string, MatrixChatRoom>();
 
         this.directRooms = derived(this.roomList, (roomList) => {
             return Array.from(roomList.values()).filter((room) => !room.isInvited && room.type === "direct");
@@ -85,6 +88,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         await this.client.store.startup();
         await this.client.startClient();
     }
+        this.client.on(RoomEvent.Timeline, (event, room) => {
+            const roomId = room?.roomId;
 
     private onClientEventRoom(room: Room) {
         const { roomId } = room;
@@ -94,6 +99,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             this.roomList.set(matrixRoom.id, matrixRoom);
         }
     }
+            if (event.getType() === "m.room.member" && roomId) this.roomList.set(roomId, new MatrixChatRoom(room));
+        });
 
     private onClientEventDeleteRoom(roomId: string) {
         this.roomList.delete(roomId);
@@ -125,60 +132,64 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             .getUsers()
             .filter((user) => user.userId !== this.client.getUserId())
             .forEach((user) => {
-                user.avatarUrl = user.avatarUrl ?? defaultWoka;
-                this.userList.set(user.userId, new MatrixChatUser(user, this.client));
+                user.avatarUrl = this.client.mxcUrlToHttp(user.avatarUrl ?? "", 48, 48) ?? defaultWoka;
+                this.userDisconnected.set(user.userId, new MatrixChatUser(user));
             });
 
-        this.getWorldChatMembers()
-            .then((members) => {
-                members.forEach((member) => {
-                    if (member.chatId)
-                        this.userList.set(member.chatId, {
-                            availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
-                            avatarUrl: defaultWoka,
-                            id: member.chatId,
-                            roomName: undefined,
-                            playUri: undefined,
-                            username: member.wokaName,
-                            isAdmin: member.tags.includes("admin"),
-                            isMember: member.tags.includes("member"),
-                            uuid: undefined,
-                            color: defaultColor,
-                            spaceId: undefined,
-                        });
-                });
-            })
-            .catch((error) => console.error(error));
+        this.getWorldChatMembers().then((members) => {
+            members.forEach((member) => {
+                if (member.chatId) {
+                    this.userDisconnected.set(member.chatId, {
+                        availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
+                        avatarUrl: defaultWoka,
+                        id: member.chatId,
+                        roomName: undefined,
+                        playUri: undefined,
+                        username: member.wokaName,
+                        isAdmin: member.tags.includes("admin"),
+                        isMember: member.tags.includes("member"),
+                        uuid: undefined,
+                        color: defaultColor,
+                        spaceId: undefined,
+                    });
+                }
+            });
+            this.userDisconnected.delete("notag_premium");
+        });
     }
 
     updateUserFromSpace(user: PartialSpaceUser): void {
-        if (!user.chatID || !this.userList.has(user.chatID)) return;
+        const connectedUserToUpdate: ChatUser | undefined = Array.from(this.userConnected.values()).filter(
+            ({ spaceId }) => spaceId === user.id
+        )[0];
 
-        const userToUpdate: ChatUser | undefined = this.userList.get(user.chatID);
+        if (!connectedUserToUpdate) return;
 
-        if (!userToUpdate) return;
-
-        if (user.availabilityStatus) userToUpdate.availabilityStatus.set(user.availabilityStatus);
-
-        this.userList.set(user.chatID, {
-            id: userToUpdate.id,
-            uuid: userToUpdate.uuid,
-            avatarUrl: userToUpdate.avatarUrl,
-            availabilityStatus: userToUpdate.availabilityStatus,
-            roomName: user.roomName ?? userToUpdate.roomName,
-            playUri: user.playUri ?? userToUpdate.playUri,
-            username: user.name ?? userToUpdate.username,
-            isAdmin: user.tags && user.tags.length > 0 ? user.tags.includes("admin") : userToUpdate.isAdmin,
-            isMember: user.tags && user.tags.length > 0 ? user.tags.includes("member") : userToUpdate.isMember,
-            visitCardUrl: user.visitCardUrl ?? userToUpdate.visitCardUrl,
-            color: user.color || userToUpdate.color,
-            spaceId: userToUpdate.spaceId,
-        });
+        if (user.availabilityStatus && user.availabilityStatus !== 0)
+            connectedUserToUpdate.availabilityStatus.set(user.availabilityStatus);
+        if (connectedUserToUpdate.uuid)
+            this.userConnected.set(connectedUserToUpdate.uuid, {
+                id: connectedUserToUpdate.id,
+                uuid: connectedUserToUpdate.uuid,
+                avatarUrl: connectedUserToUpdate.avatarUrl,
+                availabilityStatus: connectedUserToUpdate.availabilityStatus,
+                roomName: user.roomName ?? connectedUserToUpdate.roomName,
+                playUri: user.playUri ?? connectedUserToUpdate.playUri,
+                username: user.name ?? connectedUserToUpdate.username,
+                isAdmin:
+                    user.tags && user.tags.length > 0 ? user.tags.includes("admin") : connectedUserToUpdate.isAdmin,
+                isMember:
+                    user.tags && user.tags.length > 0 ? user.tags.includes("member") : connectedUserToUpdate.isMember,
+                visitCardUrl: user.visitCardUrl ?? connectedUserToUpdate.visitCardUrl,
+                color: user.color || connectedUserToUpdate.color,
+                spaceId: connectedUserToUpdate.spaceId,
+            });
     }
 
     addUserFromSpace(user: SpaceUserExtended): void {
         if (!user.chatID) return;
-
+        //TODO : Try to find why pusher send us availabilityStatus = 0
+        if (user.availabilityStatus === 0) user.availabilityStatus = AvailabilityStatus.ONLINE;
         let updatedUser = {
             uuid: user.uuid,
             id: user.chatID,
@@ -194,14 +205,14 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             spaceId: user.id,
         };
 
-        const actualUser = this.userList.get(user.chatID);
+        const actualUser = this.userConnected.get(user.uuid);
         if (actualUser) {
-            actualUser.availabilityStatus.set(AvailabilityStatus.ONLINE);
+            actualUser.availabilityStatus.set(user.availabilityStatus);
             updatedUser = {
                 uuid: user.uuid,
                 id: user.chatID,
                 avatarUrl: user.getWokaBase64 ?? defaultWoka,
-                availabilityStatus: actualUser.availabilityStatus || writable(AvailabilityStatus.ONLINE),
+                availabilityStatus: actualUser.availabilityStatus,
                 roomName: user.roomName,
                 playUri: user.playUri,
                 username: user.name,
@@ -213,31 +224,12 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             };
         }
 
-        this.userList.set(user.chatID, updatedUser);
+        this.userConnected.set(user.uuid, updatedUser);
     }
 
     disconnectSpaceUser(userId: number): void {
-        //TODO: use UUID or ID from space user as main ID
-        const userToDisconnect = Array.from(this.userList.values()).filter(({ spaceId }) => spaceId === userId)[0];
-
-        if (!userToDisconnect || userToDisconnect.id) return;
-
-        this.userList.set(userToDisconnect.id, {
-            id: userToDisconnect.id,
-            uuid: userToDisconnect.uuid,
-            avatarUrl: userToDisconnect.avatarUrl,
-            availabilityStatus: userToDisconnect.availabilityStatus,
-            roomName: undefined,
-            playUri: undefined,
-            username: userToDisconnect.username,
-            isAdmin: userToDisconnect.isAdmin,
-            isMember: userToDisconnect.isMember,
-            visitCardUrl: userToDisconnect.visitCardUrl,
-            color: userToDisconnect.color,
-            spaceId: undefined,
-        });
-
-        userToDisconnect?.availabilityStatus.set(AvailabilityStatus.UNCHANGED);
+        const { uuid } = Array.from(this.userConnected.values()).filter(({ spaceId }) => spaceId === userId)[0];
+        if (uuid) this.userConnected.delete(uuid);
     }
 
     async getWorldChatMembers(searchText?: string): Promise<ChatMemberData[]> {
@@ -245,11 +237,8 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         return members;
     }
 
-    sendBan(id: string): void {
-        const user = this.userList.get(id);
-        if (!user || user.uuid || user.username) return;
-        if (user.uuid && user.username && this.connection.emitBanPlayerMessage)
-            this.connection.emitBanPlayerMessage(user.uuid, user.username);
+    sendBan(uuid: string, username: string): void {
+        if (this.connection.emitBanPlayerMessage) this.connection.emitBanPlayerMessage(uuid, username);
     }
 
     //TODO createOptions only on matrix size
@@ -300,24 +289,21 @@ export class MatrixChatConnection implements ChatConnectionInterface {
     }
 
     searchUsers(searchText: string): void {
-        this.connection
-            .queryChatMembers(searchText)
-            .then(({ members }: ChatMembersAnswer) => {
-                members.forEach((member: ChatMember) => {
-                    if (!member.chatId || this.userList.has(member.chatId)) return;
-                    this.userList.set(member.chatId, {
-                        availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
-                        avatarUrl: defaultWoka,
-                        id: member.chatId,
-                        roomName: undefined,
-                        playUri: undefined,
-                        username: member.wokaName,
-                        isAdmin: member.tags.includes("admin"),
-                        isMember: member.tags.includes("member"),
-                        uuid: undefined,
-                        color: defaultColor,
-                        spaceId: undefined,
-                    });
+        this.connection.queryChatMembers(searchText).then(({ members }: ChatMembersAnswer) => {
+            members.forEach((member: ChatMember) => {
+                if (!member.chatId || this.userDisconnected.has(member.chatId)) return;
+                this.userDisconnected.set(member.chatId, {
+                    availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
+                    avatarUrl: defaultWoka,
+                    id: member.chatId,
+                    roomName: undefined,
+                    playUri: undefined,
+                    username: member.wokaName,
+                    isAdmin: member.tags.includes("admin"),
+                    isMember: member.tags.includes("member"),
+                    uuid: undefined,
+                    color: defaultColor,
+                    spaceId: undefined,
                 });
             })
             .catch((error) => console.error(error));

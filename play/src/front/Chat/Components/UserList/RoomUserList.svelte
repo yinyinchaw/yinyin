@@ -16,12 +16,10 @@
             shownRoomListStore.set($LL.chat.userList.isHere());
     });
 
-    $: userList = chat.userList;
-    $: filterUsers = Array.from($userList)
-        .map(([_,user])=>user)
-        .filter((user)=>(user.username)?user.username.toLocaleLowerCase().includes($chatSearchBarValue):false ) || [];
+    $: userConnected = chat.userConnected 
+    $: filteredUserConnected = Array.from($userConnected.values()).filter(({username})=> (username) ? username.toLocaleLowerCase().includes($chatSearchBarValue) : false )
 
-    $: usersByRoom = filterUsers.reduce((acc,curr)=>{
+    $: usersByRoom = filteredUserConnected.reduce((acc,curr)=>{
         let room = curr.roomName ?? DISCONNECTED_LABEL;
 
         room = (room === gameManager?.getCurrentGameScene()?.room?.roomName )? $LL.chat.userList.isHere() :room;
@@ -30,22 +28,19 @@
         userList.push(curr);
         acc.set(room,userList);
 
-        return acc;
+        return acc; 
+    },new Map<string,ChatUser[]>());
 
-    },new Map<string,ChatUser[]>()) as Map<string,ChatUser[]>;
+    $: userDisconnected = chat.userDisconnected
+    $: filteredUserDisconnected  = Array.from($userDisconnected.values())
+                                        .filter(({id,username})=> ((username)?username.toLocaleLowerCase().includes($chatSearchBarValue):false )  
+                                                                    && filteredUserConnected.every((user:ChatUser)=>user.id!==id))
+                                        .slice(0,DISCONNECTED_USERS_LIMITATION);
 
-    
-    $: disconnectedUsers   = usersByRoom.get(DISCONNECTED_LABEL)?.slice(0,DISCONNECTED_USERS_LIMITATION);
-    $: usersByRoom?.delete(DISCONNECTED_LABEL);
-
-    $: onThisMapUsers = usersByRoom.get($LL.chat.userList.isHere());
-    $: usersByRoom?.delete($LL.chat.userList.isHere())
-
-    $: roomsWithUsers = [[$LL.chat.userList.isHere(),onThisMapUsers],
+    $: roomsWithUsers = [
     ...Array.from(usersByRoom?.entries()||[])
-        .sort(([aKey,_aValue] : [string,ChatUser[]],[bKey,_bValue]:[string,ChatUser[]])=>aKey.localeCompare(bKey)),
-    [DISCONNECTED_LABEL,disconnectedUsers??[]]] as Array<[string,ChatUser[]]>;
-
+        .sort(([aKey,_aValue] : [string,ChatUser[]],[bKey,_bValue]:[string,ChatUser[]])=>(aKey===$LL.chat.userList.isHere())? -1 : aKey.localeCompare(bKey)),
+    [DISCONNECTED_LABEL,filteredUserDisconnected??[]]] as Array<[string,ChatUser[]]>;
 
 </script>
 
