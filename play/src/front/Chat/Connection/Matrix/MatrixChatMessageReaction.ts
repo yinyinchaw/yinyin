@@ -1,13 +1,17 @@
-import { ChatMessageReaction, ChatUser } from "../ChatConnection";
-import { MatrixEvent, Room } from "matrix-js-sdk";
+import { EventType, MatrixEvent, Room } from "matrix-js-sdk";
 import { MapStore } from "@workadventure/store-utils";
-import { MatrixChatUser } from "./MatrixChatUser";
+import { get, writable, Writable } from "svelte/store";
+import { ChatMessageReaction, ChatUser } from "../ChatConnection";
+import { chatUserFactory } from "./MatrixChatUser";
+
+type EventId = string;
+type ChatUserWithEventId = ChatUser & { eventId: EventId };
 
 export class MatrixChatMessageReaction implements ChatMessageReaction {
     key: string;
     messageId: string;
-    react(): void {}
-    users: MapStore<string, ChatUser>;
+    users: MapStore<string, ChatUserWithEventId>;
+    reacted: Writable<boolean>;
 
     constructor(private matrixRoom: Room, event: MatrixEvent) {
         const relation = event.getRelation();
@@ -23,12 +27,13 @@ export class MatrixChatMessageReaction implements ChatMessageReaction {
         }
         this.key = reactionKey;
         this.messageId = targetEventId;
-        this.users = new MapStore<string, ChatUser>();
-        this.addUser(event.getSender());
+        this.users = new MapStore<string, ChatUserWithEventId>();
+        this.reacted = writable(false);
+        this.addUser(event.getSender(), event.getId());
     }
 
-    public addUser(userId: string | undefined) {
-        if (userId === undefined) {
+    public addUser(userId: string | undefined, userReactionEventId: string | undefined) {
+        if (userId === undefined || userReactionEventId === undefined) {
             return;
         }
         if (this.users.get(userId) !== undefined) {
@@ -36,11 +41,47 @@ export class MatrixChatMessageReaction implements ChatMessageReaction {
         }
         const user = this.matrixRoom.client.getUser(userId);
         if (user) {
-            this.users.set(user.userId, new MatrixChatUser(user, this.matrixRoom.client));
+            this.users.set(user.userId, {
+                ...chatUserFactory(user, this.matrixRoom.client),
+                eventId: userReactionEventId,
+            });
+            this.reacted.set(userId === this.matrixRoom.myUserId);
         }
     }
 
     public removeUser(userId: string) {
         this.users.delete(userId);
+        if (get(this.reacted) && userId === this.matrixRoom.myUserId) {
+            this.reacted.set(false);
+        }
+    }
+
+    react() {
+        const userWithReactionEventId = this.users.get(this.matrixRoom.myUserId);
+        if (userWithReactionEventId === undefined) {
+            this.sendMyReaction().catch((error) => console.error(error));
+        } else {
+            this.removeMyReaction(userWithReactionEventId.eventId).catch((error) => console.error(error));
+        }
+    }
+
+    private async sendMyReaction() {
+        try {
+            await this.matrixRoom.client.sendEvent(this.matrixRoom.roomId, EventType.Reaction, {
+                "m.relates_to": { event_id: this.messageId, rel_type: "m.annotation", key: this.key },
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    private async removeMyReaction(myReactionEventId: string) {
+        try {
+            await this.matrixRoom.client
+                .redactEvent(this.matrixRoom.roomId, myReactionEventId)
+                .catch((error) => console.error(error));
+        } catch (error) {
+            console.error(error);
+        }
     }
 }

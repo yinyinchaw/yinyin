@@ -2,6 +2,7 @@
 
     import { IconCornerDownRight, IconTrash } from "@tabler/icons-svelte";
     import { ComponentType } from "svelte";
+    import { MapStore } from "@workadventure/store-utils";
     import { ChatMessage, ChatMessageReaction, ChatMessageType } from "../../Connection/ChatConnection";
     import LL, { locale } from "../../../../i18n/i18n-svelte";
     import Avatar from "../Avatar.svelte";
@@ -13,7 +14,6 @@
     import MessageAudioFile from "./Message/MessageAudioFile.svelte";
     import MessageVideoFile from "./Message/MessageVideoFile.svelte";
     import MessageEdition from "./MessageEdition.svelte";
-    import { MapStore } from "@workadventure/store-utils";
     import MessageReactions from "./MessageReactions.svelte";
 
 
@@ -43,7 +43,7 @@
 
 </script>
 
-<li class={`${isMyMessage && "tw-self-end tw-flex-row-reverse"}`}>
+<div id="message" class={`${isMyMessage && "tw-self-end tw-flex-row-reverse"}`}>
     <div class={`container-grid ${isMyMessage ? "tw-justify-end grid-container-inverted" : "tw-justify-start"}`}>
         <div
             class={`messageHeader tw-text-gray-500 tw-text-xxs tw-p-0 tw-m-0 tw-flex tw-justify-between ${isMyMessage ? "tw-flex-row-reverse" : ""} tw-items-end`}
@@ -90,17 +90,17 @@
             <MessageOptions message={message} />
         </div>
     {/if}
-</li>
+</div>
 
 <style>
 
-    li {
+    #message {
         display: flex;
         align-items: flex-start;
         position: relative;
     }
 
-    li:hover .options {
+    #message:hover .options {
         display: flex;
         flex-direction: row;
         gap: 2px;

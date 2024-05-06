@@ -1,4 +1,4 @@
-import { ClientEvent, MatrixClient, Room, RoomEvent, SyncState, Visibility } from "matrix-js-sdk";
+import { ClientEvent, MatrixClient, Room, SyncState, Visibility } from "matrix-js-sdk";
 import { derived, Readable, writable, Writable } from "svelte/store";
 import { MapStore } from "@workadventure/store-utils";
 import {
@@ -20,7 +20,7 @@ import {
 import { SpaceUserExtended } from "../../../Space/SpaceFilter/SpaceFilter";
 import { MatrixClientWrapperInterface } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
-import { MatrixChatUser } from "./MatrixChatUser";
+import { chatUserFactory } from "./MatrixChatUser";
 
 export const defaultWoka =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
@@ -80,10 +80,11 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         this.client.on(ClientEvent.DeleteRoom, this.onClientEventDeleteRoom.bind(this));
         // The chat connection is keeping the room list alive, this is why
         // we register RoomEvent.MyMembership here
-        this.client.on(RoomEvent.MyMembership, this.onRoomEventMembership.bind(this));
+        //This causing a lot of refresh...
+        //this.client.on(RoomEvent.MyMembership, this.onRoomEventMembership.bind(this));
 
         await this.client.store.startup();
-        await this.client.startClient();
+        await this.client.startClient({ threadSupport: false });
     }
 
     private onClientEventRoom(room: Room) {
@@ -126,7 +127,7 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             .filter((user) => user.userId !== this.client.getUserId())
             .forEach((user) => {
                 user.avatarUrl = user.avatarUrl ?? defaultWoka;
-                this.userList.set(user.userId, new MatrixChatUser(user, this.client));
+                this.userList.set(user.userId, chatUserFactory(user, this.client));
             });
 
         this.getWorldChatMembers()

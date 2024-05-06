@@ -1,9 +1,9 @@
 import { Readable, Writable } from "svelte/store";
 import { AtLeast } from "@workadventure/map-editor";
-import { RoomConnection } from "../../Connection/RoomConnection";
-import { SpaceUserExtended } from "../../Space/SpaceFilter/SpaceFilter";
 import { AvailabilityStatus, PartialSpaceUser } from "@workadventure/messages";
 import { MapStore } from "@workadventure/store-utils";
+import { RoomConnection } from "../../Connection/RoomConnection";
+import { SpaceUserExtended } from "../../Space/SpaceFilter/SpaceFilter";
 
 export interface ChatUser {
     id: string;
@@ -26,7 +26,7 @@ export interface ChatRoom {
     type: "direct" | "multiple";
     hasUnreadMessages: Readable<boolean>;
     avatarUrl: string | undefined;
-    messages: Readable<Map<string, ChatMessage>>;
+    messages: Readable<readonly ChatMessage[]>;
     messageReactions: MapStore<string, MapStore<string, ChatMessageReaction>>;
     sendMessage: (message: string) => void;
     sendFiles: (files: FileList) => Promise<void>;
@@ -35,8 +35,11 @@ export interface ChatRoom {
     membersId: string[];
     leaveRoom: () => void;
     joinRoom: () => void;
+    hasPreviousMessage: Readable<boolean>;
+    loadMorePreviousMessages: () => Promise<void>;
 }
 
+//Readonly attributes
 export interface ChatMessage {
     id: string;
     sender: ChatUser | undefined;
@@ -56,6 +59,7 @@ export interface ChatMessageReaction {
     key: string;
     users: MapStore<string, ChatUser>;
     react: () => void;
+    reacted: Readable<boolean>;
 }
 
 export type ChatMessageType = "text" | "image" | "file" | "audio" | "video";

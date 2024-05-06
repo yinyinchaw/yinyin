@@ -18,7 +18,7 @@
         selectedChatMessageToEdit.set(message)
     }
 
-    const { content, isMyMessage, isDeleted } = message;
+    const { content, isMyMessage,type } = message;
 
 
 </script>
@@ -37,7 +37,7 @@
     <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={()=>console.debug("not implemented yet")}>
         <IconMoodSmile size={16} />
     </button>
-    {#if isMyMessage }
+    {#if isMyMessage && type==="text" }
         <button class="tw-p-0 tw-m-0 hover:tw-text-cyan-500" on:click={selectMessageToEdit}>
             <IconPencil size={16} />
         </button>

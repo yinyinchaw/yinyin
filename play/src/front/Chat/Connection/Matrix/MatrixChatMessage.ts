@@ -1,7 +1,8 @@
-import { EventType, IEventRelation, MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
+import { EventType, IEventRelation, MatrixEvent, Room } from "matrix-js-sdk";
 import { writable, Writable } from "svelte/store";
+import { v4 as uuidv4 } from "uuid";
 import { ChatMessage, ChatMessageContent, ChatMessageType, ChatUser } from "../ChatConnection";
-import { MatrixChatUser } from "./MatrixChatUser";
+import { chatUserFactory } from "./MatrixChatUser";
 
 export class MatrixChatMessage implements ChatMessage {
     id: string;
@@ -15,17 +16,12 @@ export class MatrixChatMessage implements ChatMessage {
     isDeleted: Writable<boolean>;
     isModified: Writable<boolean>;
 
-    constructor(
-        private event: MatrixEvent,
-        private client: MatrixClient,
-        private room: Room,
-        isQuotedMessage?: boolean
-    ) {
-        this.id = event.getId() ?? "";
+    constructor(private event: MatrixEvent, private room: Room, isQuotedMessage?: boolean) {
+        this.id = event.getId() ?? uuidv4();
         this.type = this.mapMatrixMessageTypeToChatMessage();
         this.date = event.getDate();
         this.sender = this.getSender();
-        this.isMyMessage = this.client.getUserId() === event.getSender();
+        this.isMyMessage = this.room.client.getUserId() === event.getSender();
         this.content = this.getMessageContent();
         this.isQuotedMessage = isQuotedMessage;
         this.isDeleted = writable(this.getIsDeleted());
@@ -36,24 +32,35 @@ export class MatrixChatMessage implements ChatMessage {
         let messageUser;
         const senderUserId = this.event.getSender();
         if (senderUserId) {
-            const matrixUser = this.client.getUser(senderUserId);
-            messageUser = matrixUser ? new MatrixChatUser(matrixUser, this.client) : undefined;
+            const matrixUser = this.room.client.getUser(senderUserId);
+            messageUser = matrixUser ? chatUserFactory(matrixUser, this.room.client) : undefined;
         }
         return messageUser;
     }
 
     private getMessageContent(): Writable<ChatMessageContent> {
+        const unsigned = this.event.getUnsigned();
+        const relation = unsigned["m.relations"];
+        if (relation) {
+            if (relation["m.replace"]) {
+                return writable({ body: relation["m.replace"].content?.["m.new_content"].body, url: undefined });
+            }
+        }
+
         const content = this.event.getOriginalContent();
         const quotedMessage = this.getQuotedMessage();
         if (quotedMessage !== undefined) {
             this.quotedMessage = quotedMessage;
-            return writable({ body: content.formatted_body.replace(/(<([^>]+)>).*(<([^>]+)>)/, ""), url: undefined });
+            return writable({
+                body: content.formatted_body.replace(/^(<mx-reply>).*(<\/mx-reply>)/, ""),
+                url: undefined,
+            });
         }
 
         if (this.type !== "text") {
             return writable({
                 body: content.body,
-                url: this.client.mxcUrlToHttp(this.event.getOriginalContent().url) ?? undefined,
+                url: this.room.client.mxcUrlToHttp(this.event.getOriginalContent().url) ?? undefined,
             });
         }
 
@@ -65,7 +72,7 @@ export class MatrixChatMessage implements ChatMessage {
         if (replyEventId) {
             const replyToEvent = this.room.findEventById(replyEventId);
             if (replyToEvent) {
-                return new MatrixChatMessage(replyToEvent, this.client, this.room, true);
+                return new MatrixChatMessage(replyToEvent, this.room, true);
             }
         }
         return;
@@ -97,13 +104,13 @@ export class MatrixChatMessage implements ChatMessage {
     }
 
     remove() {
-        this.client.redactEvent(this.room.roomId, this.id).catch((error) => console.error(error));
+        this.room.client.redactEvent(this.room.roomId, this.id).catch((error) => console.error(error));
     }
 
     async edit(newContent: string): Promise<void> {
         const editRelation: IEventRelation = { rel_type: "m.replace", event_id: this.id };
         try {
-            await this.client.sendEvent(this.room.roomId, EventType.RoomMessage, {
+            await this.room.client.sendEvent(this.room.roomId, EventType.RoomMessage, {
                 msgtype: "m.text",
                 "m.relates_to": editRelation,
                 "m.new_content": { msgtype: "m.text", body: newContent },
