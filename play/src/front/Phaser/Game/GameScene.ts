@@ -1533,7 +1533,7 @@ export class GameScene extends DirtyScene {
                     //We need to add an env parameter to switch between chat services
                     this.chatConnection = new MatrixChatConnection(
                         this.connection,
-                        new MatrixClientWrapper(MATRIX_PUBLIC_URI)
+                        new MatrixClientWrapper(MATRIX_PUBLIC_URI,localUserStore)
                     );
                     
                     const chatId = localUserStore.getChatId();

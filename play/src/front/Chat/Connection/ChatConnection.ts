@@ -85,7 +85,12 @@ export interface ChatConnectionInterface {
     createRoom : (roomOptions : CreateRoomOptions) => Promise<{room_id: string;}>;
     createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
     getDirectRoomFor(uuserChatId : string): ChatRoom | undefined;
-    searchUsers(searchText : string):void;
+    searchUsers(searchText : string):Promise<void>;
+    searchAccesibleRooms(searchText : string) : Promise<{
+        id : string, 
+        name : string | undefined
+    }[]>;
+    joinRoom(roomId : string):Promise<ChatRoom | undefined>;
     destroy():void;
 }
 

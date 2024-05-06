@@ -1,6 +1,5 @@
-import { derived, Readable, writable, Writable } from "svelte/store";
-import { ClientEvent, MatrixClient, RoomEvent, SyncState, UserEvent, Visibility } from "matrix-js-sdk";
 import { derived, get, Readable, writable, Writable } from "svelte/store";
+import { ClientEvent, IRoomDirectoryOptions, MatrixClient, MatrixEvent, Room, RoomEvent, RoomState, RoomStateEvent, SyncState, Visibility } from "matrix-js-sdk";
 import { MapStore } from "@workadventure/store-utils";
 import {
     AvailabilityStatus,
@@ -22,6 +21,7 @@ import { SpaceUserExtended } from "../../../Space/SpaceFilter/SpaceFilter";
 import { MatrixClientWrapperInterface } from "./MatrixClientWrapper";
 import { MatrixChatRoom } from "./MatrixChatRoom";
 import { MatrixChatUser } from "./MatrixChatUser";
+import { selectedRoom } from "../../Stores/ChatStore";
 
 export const defaultWoka =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAdCAYAAABBsffGAAAB/ElEQVRIia1WMW7CQBC8EAoqFy74AD1FqNzkAUi09DROwwN4Ag+gMQ09dcQXXNHQIucBPAJFc2Iue+dd40QZycLc7c7N7d7u+cU9wXw+ryyL0+n00eU9tCZIOp1O/f/ZbBbmzuczX6uuRVTlIAYpCSeTScumaZqw0OVyURd47SIGaZ7n6s4wjmc0Grn7/e6yLFtcr9dPaaOGhcTEeDxu2dxut2hXUJ9ioKmW0IidMg6/NPmD1EmqtojTBWAvE26SW8r+YhfIu87zbyB5BiRerVYtikXxXuLRuK058HABMyz/AX8UHwXgV0NRaEXzDKzaw+EQCioo1yrsLfvyjwZrTvK0yp/xh/o+JwbFhFYgFRNqzGEIB1ZhH2INkXJZoShn2WNSgJRNS/qoYSHxer1+qkhChnC320ULRI1LEsNhv99HISBkLmhP/7L8OfqhiKC6SzEJtSTLHMkGFhK6XC79L89rmtC6rv0YfjXV9COPDwtVQxEc2ZflIu7R+WADQrkA7eCH5BdFwQRXQ8bKxXejeWFoYZGCQM7Yh7BAkcw0DEnEEPHhbjBPQfCDvwzlEINlWZq3OAiOx2O0KwAKU8gehXfzu2Wz2VQMTXqCeLZZSNvtVv20MFsu48gQpDvjuHYxE+ZHESBPSJ/x3sqBvhe0hc5vRXkfypBY4xGcc9+lcFxartG6LgAAAABJRU5ErkJggg==";
@@ -59,6 +59,7 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         })().catch((error) => {
             console.error(error);
         });
+
     }
 
     async startMatrixClient() {
@@ -84,12 +85,13 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         // The chat connection is keeping the room list alive, this is why
         // we register RoomEvent.MyMembership here
         this.client.on(RoomEvent.MyMembership, this.onRoomEventMembership.bind(this));
+        
+        this.client.on(RoomEvent.Timeline,  this.onRoomEventTimeline.bind(this));
+
 
         await this.client.store.startup();
         await this.client.startClient();
     }
-        this.client.on(RoomEvent.Timeline, (event, room) => {
-            const roomId = room?.roomId;
 
     private onClientEventRoom(room: Room) {
         const { roomId } = room;
@@ -99,8 +101,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
             this.roomList.set(matrixRoom.id, matrixRoom);
         }
     }
-            if (event.getType() === "m.room.member" && roomId) this.roomList.set(roomId, new MatrixChatRoom(room));
-        });
 
     private onClientEventDeleteRoom(roomId: string) {
         this.roomList.delete(roomId);
@@ -108,23 +108,34 @@ export class MatrixChatConnection implements ChatConnectionInterface {
 
     private onRoomEventMembership(room: Room, membership: string, prevMembership: string | undefined) {
         const { roomId } = room;
-        const existingMatrixChatRoom = this.roomList.get(roomId);
-        if (membership !== prevMembership && existingMatrixChatRoom === undefined) {
+        const existingMatrixChatRoom = this.roomList.has(roomId);
+        if (membership !== prevMembership && existingMatrixChatRoom) {
             if (membership === KnownMembership.Join) {
                 this.roomList.set(roomId, new MatrixChatRoom(room));
+                return;
             }
             if (membership === KnownMembership.Leave || membership === KnownMembership.Ban) {
                 this.roomList.delete(roomId);
+                const currentRoom = get(selectedRoom)?.id;
+                if(currentRoom && currentRoom===roomId)selectedRoom.set(undefined);
+                return;
             }
             if (membership === KnownMembership.Invite) {
                 const inviter = room.getDMInviter();
                 const newRoom = new MatrixChatRoom(room);
-                if (inviter && this.userList.has(inviter)) {
+                if (inviter && (this.userDisconnected.has(inviter)|| Array.from(this.userConnected.values()).some((user:ChatUser)=> user.id===inviter))) {
                     this.roomList.set(roomId, newRoom);
                     newRoom.joinRoom();
                 }
+                return;
             }
         }
+    }
+
+    private onRoomEventTimeline(event : MatrixEvent,room:Room |undefined){
+        const roomId = room?.roomId;
+        if (event.getType() === "m.room.member" && roomId) this.roomList.set(roomId, new MatrixChatRoom(room));
+
     }
 
     private initUserList(): void {
@@ -154,7 +165,6 @@ export class MatrixChatConnection implements ChatConnectionInterface {
                     });
                 }
             });
-            this.userDisconnected.delete("notag_premium");
         });
     }
 
@@ -288,25 +298,85 @@ export class MatrixChatConnection implements ChatConnectionInterface {
         return undefined;
     }
 
-    searchUsers(searchText: string): void {
-        this.connection.queryChatMembers(searchText).then(({ members }: ChatMembersAnswer) => {
-            members.forEach((member: ChatMember) => {
-                if (!member.chatId || this.userDisconnected.has(member.chatId)) return;
-                this.userDisconnected.set(member.chatId, {
-                    availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
-                    avatarUrl: defaultWoka,
-                    id: member.chatId,
-                    roomName: undefined,
-                    playUri: undefined,
-                    username: member.wokaName,
-                    isAdmin: member.tags.includes("admin"),
-                    isMember: member.tags.includes("member"),
-                    uuid: undefined,
-                    color: defaultColor,
-                    spaceId: undefined,
+    searchUsers(searchText: string): Promise<void> {
+        return new Promise((res,rej)=>{
+            this.connection.queryChatMembers(searchText).then(({ members }: ChatMembersAnswer) => {
+                members.forEach((member: ChatMember) => {
+                    if (!member.chatId || this.userDisconnected.has(member.chatId)) return;
+                    this.userDisconnected.set(member.chatId, {
+                        availabilityStatus: writable(AvailabilityStatus.UNCHANGED),
+                        avatarUrl: defaultWoka,
+                        id: member.chatId,
+                        roomName: undefined,
+                        playUri: undefined,
+                        username: member.wokaName,
+                        isAdmin: member.tags.includes("admin"),
+                        isMember: member.tags.includes("member"),
+                        uuid: undefined,
+                        color: defaultColor,
+                        spaceId: undefined,
+                    });
                 });
-            })
-            .catch((error) => console.error(error));
+                res();
+        }).catch((error) => rej(error));
+        })
+
+}
+
+    async searchAccesibleRooms(searchText = "") : Promise<{
+        id : string, 
+        name : string | undefined
+    }[]>{
+        return new Promise((res,rej)=>{
+
+            const searchOption : IRoomDirectoryOptions = {
+                include_all_networks : true,
+                filter : {
+                    generic_search_term : searchText
+                }
+            };
+
+            this.client.publicRooms(searchOption).then(({chunk})=>{
+                const publicRoomsChunkRoom = chunk
+                    .filter(({room_id})=> !this.roomList.has(room_id))
+                    .map((chunkRoom)=>{
+                        return {
+                            id : chunkRoom.room_id,
+                            name: chunkRoom.name,
+                        }
+                    });
+                res(publicRoomsChunkRoom);
+            }).catch((error)=>{
+                rej(error)
+            })  
+        });
+    }
+
+    async joinRoom(roomId : string) : Promise<ChatRoom>{
+        return new Promise((res,rej)=>{
+            this.client.joinRoom(roomId)
+                .then(async (_)=>{
+                    //Wait Sync Event before use/update roomList otherwise room not exist in the client 
+                        await new Promise<void>((resolve,_)=>{
+                        this.client.once(ClientEvent.Sync,(state)=>{
+                            if(state === SyncState.Syncing){
+                                resolve();
+                            };
+                        })
+                    });
+
+                    const roomAfterSync = this.client.getRoom(roomId);
+                    if(!roomAfterSync)return;
+
+                    const matrixRoom = new MatrixChatRoom(roomAfterSync);
+                    this.roomList.set(roomId,matrixRoom);
+                    res(matrixRoom);
+                })
+                .catch((error) => {
+                    console.error("Unable to join", error)
+                    rej(error)
+                });
+        })
     }
 
     destroy(): void {

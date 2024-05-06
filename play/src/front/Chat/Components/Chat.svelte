@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { IconBrandNodejs, IconLoader3 } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
-    import { chatSearchBarValue, navChat } from "../Stores/ChatStore";
+    import { chatSearchBarValue, joignableRoom, navChat } from "../Stores/ChatStore";
     import RoomUserList from "./UserList/RoomUserList.svelte";
     import RoomList from "./RoomList.svelte";
+    import ChatLoader from "./ChatLoader.svelte"
     import { CONNECTED_USER_FILTER_NAME, WORLD_SPACE_NAME } from "../../Space/Space";
     import { LocalSpaceProviderSingleton } from "../../Space/SpaceProvider/SpaceStore";
 
@@ -14,30 +14,37 @@
 
     let searchValue = "";
     let typingTimer : NodeJS.Timeout;
+    let searchLoader : boolean = false;
 
     const handleKeyUp = ()=>{
-        if($navChat === "chat") return;
         clearTimeout(typingTimer);
-        
         typingTimer = setTimeout(()=>{
-            setConnectedUsersFilter(searchValue);
-            chat.searchUsers(searchValue);
+            searchLoader = true ; 
+            if($navChat === "chat"){
+                searchAccesibleRooms();
+            }
+
+            setConnectedUsersFilter();
+
+            chat.searchUsers(searchValue).finally(()=>{
+                searchLoader = false;
+            });
         },DONE_TYPING_INTERVAL);
     }
 
     const handleKeyDown = ()=>{
-        if($navChat === "chat") return;
+        if(searchValue==="")  joignableRoom.set([]);
         clearTimeout(typingTimer);
     }
 
-    const setConnectedUsersFilter = (searchText = "") =>{
+    const setConnectedUsersFilter = () =>{
         const SpaceProvider = LocalSpaceProviderSingleton.getInstance();
         if(!SpaceProvider)return;
 
         const allWorldUserSpace = SpaceProvider.get(WORLD_SPACE_NAME);
         const connectedUsersFilter = allWorldUserSpace.getSpaceFilter(CONNECTED_USER_FILTER_NAME);
 
-        if(searchText==="" && connectedUsersFilter.getFilterType()!=='spaceFilterEverybody'){
+        if($chatSearchBarValue==="" && connectedUsersFilter.getFilterType()!=='spaceFilterEverybody'){
             connectedUsersFilter.setFilter({
                 $case : "spaceFilterEverybody",
                 spaceFilterEverybody : {}
@@ -49,22 +56,31 @@
         connectedUsersFilter.setFilter({
             $case : "spaceFilterContainName",
             spaceFilterContainName : {
-                value : searchValue
+                value : $chatSearchBarValue
             }
         })
 
 
     }
+
+    const searchAccesibleRooms = () => {
+        chat
+            .searchAccesibleRooms($chatSearchBarValue)
+            .then((chatRooms : {id:string,name:string|undefined}[])=>{
+                console.log(chatRooms);
+                joignableRoom.set(chatRooms);
+        })
+        .finally(()=>{
+            searchLoader = false;
+        })
+                return;
+    }
+ 
 </script>
 
 <div class="tw-flex tw-flex-col tw-gap-2 tw-h-full">
     {#if $chatConnectionStatus === "CONNECTING"}
-        <div class="tw-text-gray-400 tw-text-xl tw-flex tw-flex-col tw-items-center tw-mt-20">
-            <IconLoader3 class="tw-animate-spin" size={40} />
-            <p class="tw-m-0">
-                {$LL.chat.connecting()}
-            </p>
-        </div>
+        <ChatLoader label={$LL.chat.connecting()}/>
     {/if}
     {#if $chatConnectionStatus === "ON_ERROR"}
         <p class="tw-text-red-500">Something went wrong with chat</p>
@@ -93,8 +109,14 @@
         </div>
         {#if $navChat === "users"}
             <RoomUserList/>
+            {#if searchLoader}
+                <ChatLoader label={"search msg ..."}/> 
+            {/if}
         {:else}
             <RoomList/>
+            {#if searchLoader}
+                <ChatLoader label={"search msg ..."}/> 
+            {/if}
         {/if}
     {/if}
 </div>

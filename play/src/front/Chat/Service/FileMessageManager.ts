@@ -8,6 +8,7 @@ import { uploaderManager } from "./UploaderManager";
 
 const _VERBOSE = true;
 
+//FileExt, UploadedFile, uploadingState
 export enum uploadingState {
     inprogress = 1,
     finish,
@@ -19,7 +20,12 @@ export interface UploadedFileInterface {
     id: string;
     uploadState: uploadingState;
 }
-
+export interface FileExt extends File {
+    uploadState: uploadingState;
+    errorMessage?: string;
+    errorCode?: number;
+    maxFileSize?: string;
+}
 class NotLoggedUser extends Error {}
 class DisabledChat extends Error {}
 
@@ -79,12 +85,7 @@ export class UploadedFile implements FileExt, UploadedFileInterface {
     }
 }
 
-export interface FileExt extends File {
-    uploadState: uploadingState;
-    errorMessage?: string;
-    errorCode?: number;
-    maxFileSize?: string;
-}
+
 
 export class FileMessageManager {
     //upload and send files messages

@@ -2,16 +2,19 @@
     import highlightWords from "highlight-words";
     import { MoreHorizontalIcon, ShieldOffIcon, ShieldIcon, SlashIcon, UsersIcon } from "svelte-feather-icons";
     import { get } from "svelte/store";
-    import { LL } from "../../../../i18n/i18n-svelte";
-    import { defaultColor, defaultWoka, User } from "../../Xmpp/AbstractRoom";
+    import { LL } from "../../../i18n/i18n-svelte";
   
-    import { requestVisitCardsStore } from "../../../Stores/GameStore";
-    import { ENABLE_OPENID } from "../../../Enum/EnvironmentVariable";
+/*     import { requestVisitCardsStore } from "../../../Stores/GameStore";
+    import { ENABLE_OPENID } from "../../../Enum/EnvironmentVariable"; */
+    
     import walk from "../../../../public/static/svg/walk.svg";
     import teleport from "../../../../public/static/svg/teleport.svg";
     import businessCard from "../../../../public/static/svg/business-cards.svg";
     import { mucRoomsStore } from "../Stores/MucRoomsStore";
     import { MucRoom } from "../Xmpp/MucRoom";
+    import { requestVisitCardsStore } from "../../Stores/GameStore";
+    import { ENABLE_OPENID } from "../../Enum/EnvironmentVariable";
+    import { User, defaultColor, defaultWoka } from "../Xmpp/AbstractRoom";
     
 
     export let mucRoom: MucRoom;

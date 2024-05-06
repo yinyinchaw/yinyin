@@ -37,7 +37,7 @@ export class MatrixChatMessage implements ChatMessage {
         const senderUserId = this.event.getSender();
         if (senderUserId) {
             const matrixUser = this.client.getUser(senderUserId);
-            messageUser = matrixUser ? new MatrixChatUser(matrixUser, this.client) : undefined;
+            messageUser = matrixUser ? new MatrixChatUser(matrixUser) : undefined;
         }
         return messageUser;
     }

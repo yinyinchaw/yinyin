@@ -4,7 +4,7 @@ import { arrayEmoji, Emoji } from "../Stores/Utils/emojiSchema";
 import { RequestedStatus } from "../Rules/StatusRules/statusRules";
 import { requestedStatusFactory } from "../Rules/StatusRules/StatusFactory/RequestedStatusFactory";
 import type { LocalUser } from "./LocalUser";
-import { areCharacterTexturesValid, isUserNameValid } from "./LocalUser";
+import { areCharacterTexturesValid, isUserNameValid } from "./LocalUserUtils";
 
 const playerNameKey = "playerName";
 const selectedPlayerKey = "selectedPlayer";
