@@ -1016,6 +1016,8 @@ export class GameScene extends DirtyScene {
         this.gameMapFrontWrapper?.close();
         this.chatConnection?.destroy();
 
+        LocalSpaceProviderSingleton.getInstance().destroy();
+
         //When we leave game, the camera is stop to be reopen after.
         // I think that we could keep camera status and the scene can manage camera setup
         //TODO find wy chrome don't manage correctly a multiple ask mediaDevices
@@ -1531,7 +1533,7 @@ export class GameScene extends DirtyScene {
                     //We need to add an env parameter to switch between chat services
                     this.chatConnection = new MatrixChatConnection(
                         this.connection,
-                        new MatrixClientWrapper(MATRIX_PUBLIC_URI)
+                        new MatrixClientWrapper(MATRIX_PUBLIC_URI,localUserStore)
                     );
                     
                     const chatId = localUserStore.getChatId();

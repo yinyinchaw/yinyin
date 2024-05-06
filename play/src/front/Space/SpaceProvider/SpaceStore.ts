@@ -14,9 +14,7 @@ export class LocalSpaceProvider implements SpaceProviderInterface {
     constructor(
         private socket: WebSocket | undefined = undefined,
         private spaces: Map<string, SpaceInterface> = new Map<string, SpaceInterface>()
-    ) { 
-    
-    }
+    ) {}
 
     add(spaceName: string, metadata: Map<string, unknown> = new Map<string, unknown>()): SpaceInterface {
         if (this.exist(spaceName)) throw new SpaceAlreadyExistError(spaceName);
@@ -40,6 +38,12 @@ export class LocalSpaceProvider implements SpaceProviderInterface {
         const space: SpaceInterface | undefined = this.spaces.get(spaceName);
         if (!space) throw new SpaceDoesNotExistError(spaceName);
         return space;
+    }
+
+    destroy(){
+        this.getAll().forEach((space)=>{
+            space.destroy();
+        })
     }
 }
 

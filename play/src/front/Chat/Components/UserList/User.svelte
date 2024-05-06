@@ -13,14 +13,13 @@
 
     export let user:ChatUser;
 
-    $: ({ id,availabilityStatus : userStatus, username = "",color,isAdmin,isMember,avatarUrl } = user);
+    $: ({ id,availabilityStatus , username = "",color,isAdmin,isMember,avatarUrl } = user);
 
     $: isMe = (user.id===localUserStore.getChatId());
 
+    $: userStatus = (isMe) ? availabilityStatusStore : availabilityStatus; 
 
-    $: availabilityStatus = (isMe) ? availabilityStatusStore : userStatus; 
-
-    let chatConnection = gameManager.getCurrentGameScene().chatConnection
+    let chatConnection = gameManager.getCurrentGameScene().chatConnection;
 
     $: chunks = highlightWords({
         text: username.match(/\[\d*]/) ? username.substring(0, username.search(/\[\d*]/)) : username,
@@ -63,6 +62,8 @@
 
 </script>
  <!-- svelte-ignore a11y-click-events-have-key-events -->
+
+
 <div 
 on:click|stopPropagation={openChat}
 class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center tw-justify-between hover:tw-bg-white hover:tw-bg-opacity-10 hover:tw-rounded-md hover:!tw-cursor-pointer tw-p-1">
@@ -84,16 +85,16 @@ class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center tw-justify-betwee
                 alt="Avatar"
             />
         </div>
-        {#if $availabilityStatus}
+        {#if $userStatus && user.roomName}
             <span
-                title={getNameOfAvailabilityStatus($availabilityStatus)}
+                title={getNameOfAvailabilityStatus($userStatus)}
                 class={`status tw-w-4 tw-h-4 tw-cursor-default tw-block tw-rounded-full tw-absolute tw-right-0 tw-top-0 tw-transform tw-translate-x-2 -tw-translate-y-1 tw-border-solid tw-border-2 tw-border-light-purple`}
-                style="--color:{getColorHexOfStatus($availabilityStatus)}"
+                style="--color:{getColorHexOfStatus($userStatus)}"
             />
         {/if}
     </div>
     <div
-    class={`tw-flex-auto tw-ml-3 ${!$availabilityStatus && "tw-opacity-50"}  tw-cursor-default`}
+    class={`tw-flex-auto tw-ml-3 ${!$userStatus && "tw-opacity-50"}  tw-cursor-default`}
     
 >
     <h1 class={`tw-text-sm tw-font-bold tw-mb-0  tw-cursor-default`}>
@@ -123,15 +124,15 @@ class="tw-text-md tw-flex tw-gap-2 tw-flex-row tw-items-center tw-justify-betwee
     <p class="tw-text-xs tw-mb-0 tw-font-condensed tw-opacity-75  tw-cursor-default tw-self-end">
         {#if isMe}
             {$LL.chat.you()}
-        {:else if $availabilityStatus}
-            {getNameOfAvailabilityStatus($availabilityStatus ?? 0)}
+        {:else if $userStatus}
+            {getNameOfAvailabilityStatus($userStatus ?? 0)}
         {:else}
             {$LL.chat.userList.disconnected()}
         {/if}
     </p>
 </div>
 </div>
-    {#if $availabilityStatus && !isMe}
+    {#if $userStatus && !isMe}
         <UserActionButton {user}/>
     {/if}
 </div>

@@ -1,14 +1,33 @@
-import { createClient, IndexedDBCryptoStore, IndexedDBStore, MatrixClient } from "matrix-js-sdk";
-import { localUserStore } from "../../../Connection/LocalUserStore";
+import { createClient, ICreateClientOpts, IndexedDBCryptoStore, IndexedDBStore, MatrixClient } from "matrix-js-sdk";
+//import { localUserStore } from "../../../Connection/LocalUserStore";
+import { LocalUser } from "../../../Connection/LocalUser";
 
 export interface MatrixClientWrapperInterface {
     initMatrixClient(): Promise<MatrixClient>;
 }
+
+export interface MatrixLocalUserStore {
+    getLocalUser() : LocalUser | null;
+    getMatrixDeviceId(userId : string) : string;
+    getMatrixAccessToken():string;
+    getMatrixRefreshToken():string;
+    getMatrixUserId():string;
+    getMatrixLoginToken():string;
+    setMatrixDeviceId(deviceId : string, userId : string) : void ;
+    setMatrixLoginToken(loginToken : string|null):void;
+    setMatrixUserId(userId :string):void;
+    setMatrixAccessToken(accessToken : string):void;
+    setMatrixRefreshToken(refreshToken : string | null):void;
+    setMatrixAccessTokenExpireDate(AccessTokenExpireDate : Date) :void;
+    getName():string;
+}
+
+
 export class MatrixClientWrapper implements MatrixClientWrapperInterface {
-    constructor(private baseUrl: string) {}
+    constructor(private baseUrl: string ,private localUserStore : MatrixLocalUserStore , private _createClient : (opts: ICreateClientOpts)=> MatrixClient = createClient) {}
 
     public async initMatrixClient(): Promise<MatrixClient> {
-        const userId = localUserStore.getLocalUser()?.uuid;
+        const userId = this.localUserStore.getLocalUser()?.uuid;
         if (!userId) {
             throw new Error("UserUUID is undefined, this is not supposed to happen.");
         }
@@ -26,6 +45,7 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
         matrixUserId = matrixUserIdFromLocalStorage;
 
         const oldMatrixUserId: string | null = matrixUserIdFromLocalStorage;
+
         if (matrixLoginToken !== null) {
             const {
                 accessToken: accessTokenFromLoginToken,
@@ -35,7 +55,7 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
             accessToken = accessTokenFromLoginToken;
             refreshToken = refreshTokenFromLoginToken;
             matrixUserId = userIdFromLoginToken;
-            localUserStore.setMatrixLoginToken(null);
+            this.localUserStore.setMatrixLoginToken(null);
         }
 
         if (accessToken === null && refreshToken === null) {
@@ -61,7 +81,7 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
 
         const { matrixStore, matrixCryptoStore } = this.matrixWebClientStore(matrixUserId, deviceId);
         // Now, let's instantiate the Matrix client.
-        const matrixClient = createClient({
+        const matrixClient = this._createClient({
             baseUrl: this.baseUrl,
             deviceId,
             userId: matrixUserId,
@@ -70,23 +90,27 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
             store: matrixStore,
             cryptoStore: matrixCryptoStore,
         });
+
         if (oldMatrixUserId !== matrixUserId) {
+            console.log(oldMatrixUserId , matrixUserId);
             await matrixClient.clearStores();
         }
 
         return matrixClient;
     }
 
-    private retrieveMatrixConnectionDataFromLocalStorage(userId: string) {
-        let deviceId = localUserStore.getMatrixDeviceId(userId);
+    private retrieveMatrixConnectionDataFromLocalStorage(userId: string) : {
+        deviceId : string, accessToken : string, refreshToken : string, matrixUserId : string, matrixLoginToken : string
+    } {
+        let deviceId = this.localUserStore.getMatrixDeviceId(userId);
         if (deviceId === null) {
             deviceId = this.generateDeviceId();
-            localUserStore.setMatrixDeviceId(deviceId, userId);
+            this.localUserStore.setMatrixDeviceId(deviceId, userId);
         }
-        const accessToken = localUserStore.getMatrixAccessToken();
-        const refreshToken = localUserStore.getMatrixRefreshToken();
-        const matrixUserId = localUserStore.getMatrixUserId();
-        const matrixLoginToken = localUserStore.getMatrixLoginToken();
+        const accessToken = this.localUserStore.getMatrixAccessToken();
+        const refreshToken = this.localUserStore.getMatrixRefreshToken();
+        const matrixUserId = this.localUserStore.getMatrixUserId();
+        const matrixLoginToken = this.localUserStore.getMatrixLoginToken();
         return { deviceId, accessToken, refreshToken, matrixUserId, matrixLoginToken };
     }
 
@@ -95,19 +119,19 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
         accessToken: string | null;
         refreshToken: string | null;
     }> {
-        const client = createClient({
+        const client = this._createClient({
             baseUrl: this.baseUrl,
         });
         try {
             const { access_token, refresh_token, user_id } = await client.registerGuest({
                 body: {
-                    initial_device_display_name: localUserStore.getName() || "",
+                    initial_device_display_name: this.localUserStore.getName() || "",
                     refresh_token: true,
                 },
             });
-            localUserStore.setMatrixUserId(user_id);
-            localUserStore.setMatrixAccessToken(access_token ?? null);
-            localUserStore.setMatrixRefreshToken(refresh_token ?? null);
+            this.localUserStore.setMatrixUserId(user_id);
+            this.localUserStore.setMatrixAccessToken(access_token ?? null);
+            this.localUserStore.setMatrixRefreshToken(refresh_token ?? null);
             client.setGuest(true);
             return { matrixUserId: user_id, accessToken: access_token ?? null, refreshToken: refresh_token ?? null };
         } catch (error) {
@@ -140,7 +164,7 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
         accessToken: string;
         refreshToken: string | null;
     }> {
-        const client = createClient({
+        const client = this._createClient({
             baseUrl: matrixServerUrl,
         });
 
@@ -150,14 +174,14 @@ export class MatrixClientWrapper implements MatrixClientWrapperInterface {
             initial_device_display_name: "WorkAdventure",
         });
 
-        localUserStore.setMatrixUserId(user_id);
-        localUserStore.setMatrixAccessToken(access_token);
-        localUserStore.setMatrixRefreshToken(refresh_token ?? null);
+        this.localUserStore.setMatrixUserId(user_id);
+        this.localUserStore.setMatrixAccessToken(access_token);
+        this.localUserStore.setMatrixRefreshToken(refresh_token ?? null);
         if (expires_in_ms !== undefined) {
             const expireDate = new Date();
             // Add response.expires_in milliseconds to the current date.
             expireDate.setMilliseconds(expireDate.getMilliseconds() + expires_in_ms);
-            localUserStore.setMatrixAccessTokenExpireDate(expireDate);
+            this.localUserStore.setMatrixAccessTokenExpireDate(expireDate);
         }
 
         // Note: we ignore the device ID returned by the server. We use the one we generated.

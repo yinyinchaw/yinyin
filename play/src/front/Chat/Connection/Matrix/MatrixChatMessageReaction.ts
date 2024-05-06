@@ -45,7 +45,7 @@ export class MatrixChatMessageReaction implements ChatMessageReaction {
                 ...chatUserFactory(user, this.matrixRoom.client),
                 eventId: userReactionEventId,
             });
-            this.reacted.set(userId === this.matrixRoom.myUserId);
+            this.reacted.set(this.users.get(this.matrixRoom.myUserId) !== undefined);
         }
     }
 

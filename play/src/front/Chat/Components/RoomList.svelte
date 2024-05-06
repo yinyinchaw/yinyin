@@ -3,12 +3,13 @@
     import { IconChevronDown, IconChevronRight, IconSquarePlus } from "@tabler/icons-svelte";
     import { gameManager } from "../../Phaser/Game/GameManager";
     import LL from "../../../i18n/i18n-svelte";
-    import { chatSearchBarValue, selectedRoom } from "../Stores/ChatStore";
+    import { chatSearchBarValue, selectedRoom , joignableRoom } from "../Stores/ChatStore";
     import Room from "./Room/Room.svelte";
     import RoomTimeline from "./Room/RoomTimeline.svelte";
     import AddRoomForm from "./Room/AddRoomForm.svelte";
     import RoomInvitation from "./Room/RoomInvitation.svelte";
     import { get } from "svelte/store";
+    import JoignableRooms from "./Room/JoignableRooms.svelte";
 
     const chat = gameManager.getCurrentGameScene().chatConnection;
 
@@ -18,6 +19,7 @@
     let displayRooms = true;
     let displayRoomInvitations = true;
     let displayAddRoomForm = false;
+
 
     function toggleDisplayDirectRooms() {
         displayDirectRooms = !displayDirectRooms;
@@ -39,9 +41,9 @@
     let rooms = chat.rooms
     let roomInvitations = chat.invitations
 
-    $: filteredDirectRoom = $directRooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
-    $: filteredRooms = $rooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
-    $: filteredRoomInvitations = $roomInvitations.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue))
+    $: filteredDirectRoom = $directRooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue.toLocaleLowerCase()))
+    $: filteredRooms = $rooms.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue.toLocaleLowerCase()))
+    $: filteredRoomInvitations = $roomInvitations.filter(({name})=> get(name).toLocaleLowerCase().includes($chatSearchBarValue.toLocaleLowerCase()))
 
 
 </script>
@@ -101,7 +103,12 @@
         {/each}
     {/if}
 
-
+    {#if $joignableRoom.length>0}
+    Joignable Room : 
+    {#each $joignableRoom as room (room.id)}
+        <JoignableRooms {room}/>
+    {/each}
+{/if}
 {/if}
 
 
