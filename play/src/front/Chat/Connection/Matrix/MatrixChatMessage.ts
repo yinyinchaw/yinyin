@@ -130,4 +130,14 @@ export class MatrixChatMessage implements ChatMessage {
     public markAsRemoved() {
         this.isDeleted.set(true);
     }
+
+    async addReaction(reaction: string) {
+        try {
+            await this.room.client.sendEvent(this.room.roomId, EventType.Reaction, {
+                "m.relates_to": { key: reaction, rel_type: "m.annotation", event_id: this.id },
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
 }

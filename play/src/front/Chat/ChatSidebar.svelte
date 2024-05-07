@@ -43,7 +43,7 @@
 
 <svelte:window on:keydown={onKeyDown} />
 {#if $chatVisibilityStore}
-    <section transition:fly={{ duration: 200,x:-335 }}
+    <section id="chat" transition:fly={{ duration: 200,x:-335 }}
         class="chatWindow tw-overflow-hidden tw-bg-dark-blue/95 tw-p-4">
         <button class="close-window" on:click={closeChat}>&#215;</button>
         <Chat />

@@ -53,6 +53,7 @@ export interface ChatMessage {
     edit: (newContent: string) => Promise<void>;
     isDeleted: Readable<boolean>;
     isModified: Readable<boolean>;
+    addReaction: (reaction: string) => Promise<void>;
 }
 
 export interface ChatMessageReaction {
@@ -77,25 +78,27 @@ export type ConnectionStatus = "ONLINE" | "ON_ERROR" | "CONNECTING" | "OFFLINE";
 
 export interface ChatConnectionInterface {
     connectionStatus: Readable<ConnectionStatus>;
-    userConnected : Readable<Map<string, ChatUser>>
-    userDisconnected : Readable<Map<string, ChatUser>>
+    userConnected: Readable<Map<string, ChatUser>>;
+    userDisconnected: Readable<Map<string, ChatUser>>;
     directRooms: Readable<ChatRoom[]>;
     rooms: Readable<ChatRoom[]>;
     invitations: Readable<ChatRoom[]>;
     addUserFromSpace(user: SpaceUserExtended): void;
     updateUserFromSpace(user: PartialSpaceUser): void;
-    disconnectSpaceUser(userId:number):void
-    sendBan: (uuid: string,username : string) => void;
-    createRoom : (roomOptions : CreateRoomOptions) => Promise<{room_id: string;}>;
-    createDirectRoom(userChatId: string): Promise<ChatRoom|undefined>;
-    getDirectRoomFor(uuserChatId : string): ChatRoom | undefined;
-    searchUsers(searchText : string):Promise<void>;
-    searchAccesibleRooms(searchText : string) : Promise<{
-        id : string, 
-        name : string | undefined
-    }[]>;
-    joinRoom(roomId : string):Promise<ChatRoom | undefined>;
-    destroy():void;
+    disconnectSpaceUser(userId: number): void;
+    sendBan: (uuid: string, username: string) => void;
+    createRoom: (roomOptions: CreateRoomOptions) => Promise<{ room_id: string }>;
+    createDirectRoom(userChatId: string): Promise<ChatRoom | undefined>;
+    getDirectRoomFor(uuserChatId: string): ChatRoom | undefined;
+    searchUsers(searchText: string): Promise<void>;
+    searchAccesibleRooms(searchText: string): Promise<
+        {
+            id: string;
+            name: string | undefined;
+        }[]
+    >;
+    joinRoom(roomId: string): Promise<ChatRoom | undefined>;
+    destroy(): void;
 }
 
 export type Connection = AtLeast<RoomConnection, "queryChatMembers">;

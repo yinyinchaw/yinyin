@@ -1,15 +1,18 @@
 <script lang="ts">
 
-    import { IconCircleX, IconSend } from "@tabler/icons-svelte";
+    import { IconCircleX, IconMoodSmile, IconSend } from "@tabler/icons-svelte";
     import { onDestroy } from "svelte";
     import { ChatRoom } from "../../Connection/ChatConnection";
     import { selectedChatMessageToReply } from "../../Stores/ChatStore";
     import MessageFileInput from "./Message/MessageFileInput.svelte";
+    import { getChatEmojiPicker } from "../../EmojiPicker";
+
 
     export let room: ChatRoom;
 
     let message = "";
     let messageInput: HTMLTextAreaElement;
+    let emojiButtonRef: HTMLButtonElement;
 
 
     const selectedChatChatMessageToReplyUnsubscriber = selectedChatMessageToReply.subscribe(chatMessage => {
@@ -44,9 +47,19 @@
         selectedChatChatMessageToReplyUnsubscriber();
     });
 
-    $: quotedMessageContent = $selectedChatMessageToReply?.content
-</script>
+    const emojiPicker = getChatEmojiPicker();
+    emojiPicker.on("emoji", ({ emoji }) => {
+        message+=emoji
+    });
 
+    function openCloseEmojiPicker() {
+        emojiPicker.isPickerVisible() ? emojiPicker.hidePicker() : emojiPicker.showPicker(emojiButtonRef);
+    }
+
+    $: quotedMessageContent = $selectedChatMessageToReply?.content;
+
+
+</script>
 
 {#if $selectedChatMessageToReply !== null}
     <div class="tw-flex tw-p-2 tw-items-center tw-gap-1">
@@ -63,6 +76,10 @@
               on:keydown={sendMessageOrEscapeLine}
               class="tw-w-full tw-rounded-xl wa-searchbar tw-block tw-text-white placeholder:tw-text-sm tw-px-3 tw-py-1 tw-border-light-purple tw-border tw-bg-transparent tw-resize-none tw-m-0 tw-pr-5 tw-border-none tw-outline-none tw-shadow-none focus:tw-ring-0"
               placeholder="Type your message" />
+    <button class="disabled:tw-opacity-30 disabled:!tw-cursor-none tw-p-0 tw-m-0" bind:this={emojiButtonRef}
+            on:click={openCloseEmojiPicker}>
+        <IconMoodSmile size={20} />
+    </button>
     <MessageFileInput room={room} />
     <button class="disabled:tw-opacity-30 disabled:!tw-cursor-none tw-p-0 tw-m-0"
             disabled={message.trim().length===0} on:click={()=>sendMessage(message)}>
