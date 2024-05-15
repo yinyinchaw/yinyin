@@ -1,5 +1,5 @@
-import { coWebsiteManager } from "../../WebRtc/CoWebsiteManager";
 import type { Game } from "../Game/Game";
+import { coWebsiteManager } from "../../Stores/CoWebsiteStore";
 import { ResizableScene } from "../Login/ResizableScene";
 import { HtmlUtils } from "../../WebRtc/HtmlUtils";
 import { HdpiManager } from "./HdpiManager";
@@ -33,15 +33,20 @@ export class WaScaleManager {
     }
 
     public applyNewSize(camera?: Phaser.Cameras.Scene2D.Camera) {
+        console.log("je suis dans la fonction apply new size")
         if (this.scaleManager === undefined) {
             return;
         }
         const { width, height } = coWebsiteManager.getGameSize();
+        console.log("WIDTH DANS WA SCALE MANAGER", width)
+        console.log("HEIGHT DANS WA SCALE MANAGER", height)
+        // console.log("TAILLE ECRAN DE LA FENETRE", width, height)
         const devicePixelRatio = window.devicePixelRatio ?? 1;
         const { game: gameSize, real: realSize } = this.hdpiManager.getOptimalGameSize({
             width: width * devicePixelRatio,
             height: height * devicePixelRatio,
         });
+
 
         if (realSize.width !== 0 && gameSize.width !== 0 && devicePixelRatio !== 0) {
             this.actualZoom = realSize.width / gameSize.width / devicePixelRatio;
