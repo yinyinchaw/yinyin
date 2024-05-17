@@ -1,129 +1,95 @@
 <script lang="ts">
-    import { afterUpdate, onMount } from "svelte";
+    import { afterUpdate } from "svelte";
     import { highlightedEmbedScreen } from "../../../Stores/HighlightedEmbedScreenStore";
     import CamerasContainer from "../CamerasContainer.svelte";
     import MediaBox from "../../Video/MediaBox.svelte";
-    import { coWebsiteManager } from "../../../WebRtc/CoWebsiteManager";
-    import { isMediaBreakpointDown, isMediaBreakpointUp } from "../../../Utils/BreakpointsUtils";
     import { myCameraStore, proximityMeetingStore } from "../../../Stores/MyMediaStore";
-    import MyCamera from "../../MyCamera.svelte";
     import { myJitsiCameraStore, streamableCollectionStore } from "../../../Stores/StreamableCollectionStore";
     import Loading from "../../Video/Loading.svelte";
     import { jitsiLoadingStore } from "../../../Streaming/BroadcastService";
 
-    function closeCoWebsite() {
-        if ($highlightedEmbedScreen?.type === "cowebsite") {
-            /* if the co-website is closable, would like we to close it instead of unloading it?
-            if ($highlightedEmbedScreen.embed.isClosable()) {
-                coWebsiteManager.closeCoWebsite($highlightedEmbedScreen.embed);
-            }*/
-            coWebsiteManager.unloadCoWebsite($highlightedEmbedScreen.embed).catch((err) => {
-                console.error("Cannot unload co-website", err);
-            });
-        }
-    }
+    // function closeCoWebsite() {
+    //     if ($highlightedEmbedScreen?.type === "cowebsite") {
+    //         /* if the co-website is closable, would like we to close it instead of unloading it?
+    //         if ($highlightedEmbedScreen.embed.isClosable()) {
+    //             coWebsiteManager.closeCoWebsite($highlightedEmbedScreen.embed);
+    //         }*/
+    //         coWebsiteManager.unloadCoWebsite($highlightedEmbedScreen.embed).catch((err) => {
+    //             console.error("Cannot unload co-website", err);
+    //         });
+    //     }
+    // }
 
     afterUpdate(() => {
         if ($highlightedEmbedScreen) {
-            coWebsiteManager.resizeAllIframes();
+            // coWebsiteManager.resizeAllIframes();
         }
     });
 
     let layoutDom: HTMLDivElement;
 
-    let displayCoWebsiteContainer = isMediaBreakpointDown("lg");
-    let displayFullMedias = isMediaBreakpointUp("md");
+    // let displayCoWebsiteContainer = isMediaBreakpointDown("lg");
+    // let displayFullMedias = isMediaBreakpointUp("md");
 
-    const resizeObserver = new ResizeObserver(() => {
-        displayCoWebsiteContainer = isMediaBreakpointDown("lg");
-        displayFullMedias = isMediaBreakpointUp("md");
+    // const resizeObserver = new ResizeObserver(() => {
+    //     displayCoWebsiteContainer = isMediaBreakpointDown("lg");
+    //     displayFullMedias = isMediaBreakpointUp("md");
 
-        if (!displayCoWebsiteContainer && $highlightedEmbedScreen && $highlightedEmbedScreen.type === "cowebsite") {
-            highlightedEmbedScreen.removeHighlight();
+    //     if (!displayCoWebsiteContainer && $highlightedEmbedScreen && $highlightedEmbedScreen.type === "cowebsite") {
+    //         highlightedEmbedScreen.removeHighlight();
+    //     }
+
+    //     if (displayFullMedias) {
+    //         highlightedEmbedScreen.removeHighlight();
+    //     }
+    // });
+
+    $: $highlightedEmbedScreen, reduceSizeIfScreenShare();
+
+    function reduceSizeIfScreenShare() {
+        let containerCam = document.getElementsByClassName("test-media")[0] as HTMLElement;
+        if (containerCam) {
+            if ($highlightedEmbedScreen) {
+                containerCam.style.transform = "scale(0.7)";
+                containerCam.style.marginTop = "-35px";
+            } else {
+                containerCam.style.transform = "scale(1)";
+                containerCam.style.marginTop = "0px";
+            }
         }
-
-        if (displayFullMedias) {
-            highlightedEmbedScreen.removeHighlight();
-        }
-    });
-
-    onMount(() => {
-        resizeObserver.observe(layoutDom);
-    });
+    }
 </script>
 
-<div id="presentation-layout" bind:this={layoutDom} class:full-medias={displayFullMedias} class="flex flex-col">
-    {#if displayFullMedias}
-        {#if $streamableCollectionStore.size > 0 || $myCameraStore}
-            <div id="full-medias" class="z-[300] relative mx-auto top-8 h-1/2 overflow-y-auto h-full">
-                {#if $jitsiLoadingStore}
-                    <Loading />
-                {/if}
-                {#if $streamableCollectionStore.size > 0}
-                    <CamerasContainer full={true} highlightedEmbedScreen={$highlightedEmbedScreen} />
-                {/if}
-                {#if $myCameraStore && $proximityMeetingStore === true}
-                    <MyCamera />
-                {/if}
-                {#if $myJitsiCameraStore}
-                    <MediaBox streamable={$myJitsiCameraStore} isClickable={false} />
-                {/if}
-            </div>
-        {/if}
-    {:else}
-        {#if $streamableCollectionStore.size > 0 || $myCameraStore}
-            <div class="grid gap-x-4 grid-flow-col auto-cols-auto">
-                {#if $jitsiLoadingStore}
-                    <Loading />
-                {/if}
-                {#if $streamableCollectionStore.size > 0}
-                    <CamerasContainer highlightedEmbedScreen={$highlightedEmbedScreen} />
-                {/if}
-                {#if $myCameraStore}
-                    <!-- && !$megaphoneEnabledStore TODO HUGO -->
-                    <MyCamera />
-                {/if}
-                {#if $myJitsiCameraStore}
-                    <MediaBox streamable={$myJitsiCameraStore} isClickable={false} />
-                {/if}
-            </div>
-        {/if}
-        <div id="embed-left-block" class=" {$highlightedEmbedScreen ? 'block' : 'hidden'}">
-            <div id="main-embed-screen">
-                {#if $highlightedEmbedScreen}
-                    {#if $highlightedEmbedScreen.type === "streamable"}
-                        {#key $highlightedEmbedScreen.embed.uniqueId}
-                            <MediaBox
-                                isHightlighted={true}
-                                isClickable={true}
-                                streamable={$highlightedEmbedScreen.embed}
-                            />
-                        {/key}
-                    {:else if $highlightedEmbedScreen.type === "cowebsite"}
-                        {#key $highlightedEmbedScreen.embed.getId()}
-                            <div class="highlighted-cowebsite-container">
-                                <div
-                                    id={"cowebsite-slot-" + $highlightedEmbedScreen.embed.getId()}
-                                    class="highlighted-cowebsite"
-                                />
-                                <div class="actions">
-                                    {#if $highlightedEmbedScreen.embed.isClosable()}
-                                        <button
-                                            type="button"
-                                            class="close-window top-right-btn"
-                                            on:click={closeCoWebsite}
-                                        >
-                                            &times;
-                                        </button>
-                                    {/if}
-                                </div>
-                            </div>
-                        {/key}
-                    {/if}
-                {/if}
-            </div>
+<!-- class:full-medias={displayFullMedias} -->
+
+<div id="presentation-layout" bind:this={layoutDom}>
+    <!-- Div pour l'affichage de toutes les camera (other cam : cameContainer / my cam : MyCamera'-->
+
+    {#if $streamableCollectionStore.size > 0 || $myCameraStore}
+        <div class="grid grid-flow-col gap-x-4 justify-center test-media">
+            {#if $jitsiLoadingStore}
+                <Loading />
+            {/if}
+            {#if $streamableCollectionStore.size > 0 && $proximityMeetingStore === true && $myCameraStore}
+                <CamerasContainer />
+            {/if}
+            {#if $myJitsiCameraStore}
+                <MediaBox streamable={$myJitsiCameraStore} isClickable={false} />
+            {/if}
         </div>
-        <!-- TODO HUGO Commented Why ?
+    {/if}
+
+    <!-- Div pour la personne qui reçoit le partage d'écran -->
+
+    <div id="video-container-receive" class={$highlightedEmbedScreen ? "block" : "hidden"}>
+        {#if $highlightedEmbedScreen}
+            {#key $highlightedEmbedScreen.uniqueId}
+                <MediaBox isHightlighted={true} isClickable={true} streamable={$highlightedEmbedScreen} />
+            {/key}
+        {/if}
+    </div>
+
+    <!-- TODO HUGO Commented Why ?
         {#if $streamableCollectionStore.size > 0 || $myCameraStore}
             <div
                 class="relative self-end z-[300] bottom-6 md:bottom-4 max-w-[25%] w-full"
@@ -144,65 +110,85 @@
             </div>
         {/if}
         -->
-    {/if}
+    <!-- {/if} -->
 </div>
 
-<style lang="scss">
-    @import "../../../style/breakpoints.scss";
+<!-- Props du composant camera container highlightedEmbedScreen={$highlightedEmbedScreen} -->
+<style>
+    #video-container-receive {
+    }
+
+    #presentation-layout.full-medias {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
 
     #presentation-layout {
-        &.full-medias {
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
+        display: flex;
+        flex-direction: column;
+    }
+
+    .test-media {
+        margin-bottom: -25px;
     }
 
     #embed-left-block {
         flex-direction: column;
-        flex: 0 0 75%;
+        /* flex: 0 0 75%; */
         height: 100%;
         width: 75%;
         padding-bottom: 4rem;
     }
 
-    #main-embed-screen {
-        height: 100%;
-        margin-bottom: 3%;
+    #main-embed-screen .highlighted-cowebsite {
+        height: 100% !important;
+        width: 100% !important;
+        position: relative;
+    }
 
-        .highlighted-cowebsite {
-            height: 100% !important;
-            width: 100% !important;
-            position: relative;
+    #main-embed-screen .highlighted-cowebsite-container {
+        height: 100% !important;
+        width: 96%;
+        background-color: rgba(0, 0, 0, 0.6);
+        margin: 0 !important;
+        padding: 0 !important;
+    }
 
-            &-container {
-                height: 100% !important;
-                width: 96%;
-                background-color: rgba(#000000, 0.6);
-                margin: 0 !important;
-                padding: 0 !important;
+    #main-embed-screen .highlighted-cowebsite-container .actions {
+        z-index: 151;
+        position: absolute;
+        width: 100%;
+        top: 5px;
+        right: 5px;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 2%;
+    }
 
-                .actions {
-                    z-index: 151;
-                    position: absolute;
-                    width: 100%;
-                    top: 5px;
-                    right: 5px;
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: flex-end;
-                    gap: 2%;
+    #main-embed-screen .highlighted-cowebsite-container .actions button {
+        pointer-events: all;
+    }
 
-                    button {
-                        pointer-events: all;
-                    }
-                }
-            }
+    @media (min-width: 768px) {
+        #embed-left-block {
+            flex: 0 0 65%;
         }
     }
 
-    @include media-breakpoint-only(md) {
-        #embed-left-block {
-            flex: 0 0 65%;
+    @media (min-width: 576px) {
+        #presentation-layout {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+        }
+    }
+
+    @container (max-width: 767px) {
+        .video-container-receive {
+            scale: 0.5;
+            margin-top: 0;
         }
     }
 </style>

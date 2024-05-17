@@ -4,7 +4,7 @@
     import { onDestroy, onMount } from "svelte";
 
     import { isMediaBreakpointUp } from "../../Utils/BreakpointsUtils";
-    import { EmbedScreen, highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
+    import { highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
     import { Streamable, myJitsiCameraStore } from "../../Stores/StreamableCollectionStore";
     import SoundMeterWidgetWrapper from "../SoundMeterWidgetWrapper.svelte";
     import { JitsiTrackStreamWrapper } from "../../Streaming/Jitsi/JitsiTrackStreamWrapper";
@@ -14,7 +14,6 @@
     import JitsiAudioElement from "./JitsiAudioElement.svelte";
     import ActionMediaBox from "./ActionMediaBox.svelte";
 
-
     export let clickable = true;
     export let isHightlighted = false;
     export let peer: JitsiTrackStreamWrapper;
@@ -22,15 +21,11 @@
     const videoTrackStore: Readable<JitsiTrack | undefined> = peer.videoTrackStore;
     const audioTrackStore: Readable<JitsiTrack | undefined> = peer.audioTrackStore;
 
-    let embedScreen: EmbedScreen;
+    let embedScreen: Streamable;
 
     if (peer) {
-        embedScreen = {
-            type: "streamable",
-            embed: peer as unknown as Streamable,
-        };
+        embedScreen = peer as unknown as Streamable;
     }
-
     let jitsiMediaBoxHtml: HTMLDivElement;
     let isMobileFormat = isMediaBreakpointUp("md");
     const resizeObserver = new ResizeObserver(() => {
@@ -40,6 +35,7 @@
     let videoTrackUnSuscriber: Unsubscriber;
 
     onMount(() => {
+        console.log("bonjour je suis mon propre partage d'ecran");
         resizeObserver.observe(jitsiMediaBoxHtml);
         videoTrackUnSuscriber = videoTrackStore.subscribe((videoTrack) => {
             if (videoTrack == undefined && isHightlighted) highlightedEmbedScreen.toggleHighlight(embedScreen);
@@ -50,6 +46,11 @@
         resizeObserver.unobserve(jitsiMediaBoxHtml);
         if (videoTrackUnSuscriber) videoTrackUnSuscriber();
     });
+
+    // function highlight() {
+    //     console.log("JE SUIS DANS LA FONCTION HIGHLIGHT PTN LAAAAA");
+    //     highlightedEmbedScreen.toggleHighlight(embedScreen);
+    // }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -75,8 +76,8 @@
             <JitsiVideoElement
                 jitsiTrack={$videoTrackStore}
                 isLocal={$videoTrackStore?.isLocal()}
-                isHightlighted={isHightlighted}
-                isMobileFormat={isMobileFormat}
+                {isHightlighted}
+                {isMobileFormat}
             />
         </div>
     {/if}

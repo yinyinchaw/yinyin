@@ -7,10 +7,9 @@
     import CancelablePromise from "cancelable-promise";
     import Debug from "debug";
     import { fly } from "svelte/transition";
-    import type { VideoPeer } from "../../WebRtc/VideoPeer";
+    import { VideoPeer } from "../../WebRtc/VideoPeer";
     import SoundMeterWidget from "../SoundMeterWidget.svelte";
     import { highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
-    import type { EmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
     import type { Streamable } from "../../Stores/StreamableCollectionStore";
     import { LL } from "../../../i18n/i18n-svelte";
 
@@ -52,7 +51,7 @@
     let unsubscribeStreamStore: Unsubscriber;
     let unsubscribeConstraintStore: Unsubscriber;
 
-    let embedScreen: EmbedScreen;
+    let embedScreen: Streamable;
     let videoContainer: HTMLDivElement;
     let videoElement: HTMLVideoElementExt;
     let minimized = isMediaBreakpointOnly("md");
@@ -67,16 +66,25 @@
 
     let aspectRatio = 1;
 
+    let isHighlighted = false;
+
     const debug = Debug("VideoMediaBox");
+
+    // function getSize() {
+    //     otherCamWidth = (document.getElementsByClassName("video-container")[0] as HTMLElement)?.offsetWidth;
+    //     console.log("JE SUIS DANS GETSIZE", otherCamWidth, typeof otherCamWidth);
+    //     totalOtherCamWidth += otherCamWidth;
+    //     console.log("HELLO", totalOtherCamWidth, typeof totalOtherCamWidth);
+    // }
 
     $: videoEnabled = $constraintStore ? $constraintStore.video : false;
 
-    if (peer) {
-        embedScreen = {
-            type: "streamable",
-            embed: peer as unknown as Streamable,
-        };
-    }
+    // if (peer) {
+    //     embedScreen = {
+    //         type: "streamable",
+    //         embed: peer as unknown as Streamable,
+    //     };
+    // }
 
     const resizeObserver = new ResizeObserver(() => {
         minimized = isMediaBreakpointOnly("md");
@@ -90,6 +98,7 @@
     let sinkIdPromise = CancelablePromise.resolve();
 
     onMount(() => {
+        // getSize();
         resizeObserver.observe(videoContainer);
 
         unsubscribeChangeOutput = speakerSelectedStore.subscribe((deviceId) => {
@@ -234,21 +243,27 @@
         }, 1000);
     }
 
-    function hightlight() {
-        if (!clickable || !videoEnabled) return;
-        highlightedEmbedScreen.toggleHighlight(embedScreen);
+    //Cette fonction permet de mettre en évidence la video des autres utilisateurs ne fonctionne pas pour le moment
+
+    $: isHighlighted = $highlightedEmbedScreen === peer;
+
+    function highlight() {
+        highlightedEmbedScreen.toggleHighlight(peer);
     }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- class="video-container transition-all relative h-full aspect-video" -->
+
+<!-- Dans la premiere div     style="height:{$heightCamWrapper}px;"-->
 <div
-    class="video-container transition-all relative h-full aspect-video"
+    class="video-container transition-all h-full w-full relative aspect-video"
+    class:isHighlighted
     class:video-off={!videoEnabled}
     class:h-full={$embedScreenLayoutStore === LayoutMode.VideoChat}
     bind:this={videoContainer}
     on:click={() => analyticsClient.pinMeetingAction()}
-    on:click={() => hightlight()}
-    style="height:{$heightCamWrapper}px;"
+    on:click={highlight}
 >
     <ActionMediaBox {embedScreen} trackStreamWraper={peer} {videoEnabled} />
 
@@ -269,12 +284,13 @@
             <div class="rtc-error" />
         {/if}
         <!-- svelte-ignore a11y-media-has-caption -->
+
+        <!-- Dans la video class:max-h-[230px]={videoEnabled && !isHightlighted}-->
         <video
             bind:this={videoElement}
             class:h-0={!videoEnabled}
             class:w-0={!videoEnabled}
             class:object-contain={minimized || isHightlighted || aspectRatio < 1}
-            class:max-h-[230px]={videoEnabled && !isHightlighted}
             class:max-h-full={videoEnabled && !isHightlighted && $embedScreenLayoutStore === LayoutMode.VideoChat}
             class:max-h-[80vh]={videoEnabled && isHightlighted}
             class:h-full={videoEnabled}
@@ -409,5 +425,13 @@
         &.object-contain {
             object-fit: contain;
         }
+    }
+
+    .isHighlighted {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 </style>

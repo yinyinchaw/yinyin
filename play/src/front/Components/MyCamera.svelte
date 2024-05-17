@@ -55,10 +55,19 @@
             }
         });
     });
+
+    // function addStyleSpeaker() {
+    //     let test = document.getElementsByClassName("test")
+    //     if ($mediaStreamConstraintsStore.audio) {
+    //         test
+    //     }
+    // }
 </script>
 
 <div
-    class="transition-all relative h-full aspect-video w-fit m-auto"
+    class="transition-all relative h-full test aspect-video w-fit m-auto {$mediaStreamConstraintsStore.audio
+        ? 'border-8 border-solid bg-indigo-400 rounded-lg'
+        : ''}"
     bind:this={cameraContainer}
     style={small ? "width:100%" : "height:" + $heightCamWrapper + "px;"}
 >
@@ -166,4 +175,8 @@
 
 <style lang="scss">
     @import "../style/breakpoints.scss";
+
+    .width {
+        width: 350px;
+    }
 </style>

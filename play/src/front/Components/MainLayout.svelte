@@ -9,6 +9,7 @@
     import { banMessageStore } from "../Stores/TypeMessageStore/BanMessageStore";
     import { textMessageStore } from "../Stores/TypeMessageStore/TextMessageStore";
     import { soundPlayingStore } from "../Stores/SoundPlayingStore";
+    import { hasEmbedScreen } from "../Stores/EmbedScreensStore";
     import {
         showLimitRoomModalStore,
         modalVisibilityStore,
@@ -50,6 +51,7 @@
     import Popup from "./Modal/Popup.svelte";
     import MapList from "./Exploration/MapList.svelte";
     import WarningToast from "./WarningContainer/WarningToast.svelte";
+    import EmbedScreensContainer from "./EmbedScreens/EmbedScreensContainer.svelte";
 
     let mainLayout: HTMLDivElement;
     // export let message: string;
@@ -63,16 +65,28 @@
         resizeObserver.observe(mainLayout);
         // ...
     });
+
+    function calcMainLayout() {
+        const mainLayout = document.getElementById("main-layout");
+        if (mainLayout) {
+        }
+    }
+
+    onMount(() => {
+        calcMainLayout();
+    });
 </script>
 
 <!-- Components ordered by z-index -->
 <div
     id="main-layout"
-    class="@container/main-layout relative z-10 h-screen pointer-events-none {[...$coWebsites.values()].length === 0
+    class="@container/main-layout relative flex flex-col z-10 h-screen pointer-events-none {[...$coWebsites.values()]
+        .length === 0
         ? 'not-cowebsite'
         : ''}"
     bind:this={mainLayout}
 >
+    <ActionBar />
     {#if $modalVisibilityStore || $modalPopupVisibilityStore}
         <div class="bg-black/60 w-full h-full fixed left-0 right-0" />
     {/if}
@@ -137,9 +151,9 @@
             <VisitCard visitCardUrl={$requestVisitCardsStore} />
         {/if}
 
-        <!-- {#if $hasEmbedScreen}
+        {#if $hasEmbedScreen}
             <EmbedScreensContainer />
-        {/if} -->
+        {/if}
 
         {#if $uiWebsitesStore}
             <UiWebsiteContainer />
@@ -181,7 +195,6 @@
         <ActionsMenu />
     {/if}
 
-    <ActionBar />
     <!-- svelte-ignore missing-declaration -->
     <div class="popups">
         {#each $popupStore.slice().reverse() as popup (popup.uuid)}
@@ -260,5 +273,9 @@
     .popupwrapper:nth-child(12),
     .popupwrapper:nth-child(13) {
         display: none;
+    }
+
+    #main-layout {
+        container-type: size;
     }
 </style>

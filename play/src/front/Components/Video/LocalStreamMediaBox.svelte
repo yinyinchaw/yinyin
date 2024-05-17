@@ -1,30 +1,41 @@
 <script lang="ts">
     import { highlightedEmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
-    import type { EmbedScreen } from "../../Stores/HighlightedEmbedScreenStore";
     import type { ScreenSharingLocalMedia } from "../../Stores/ScreenSharingStore";
     import type { Streamable } from "../../Stores/StreamableCollectionStore";
     import { heightCamWrapper } from "../../Stores/EmbedScreensStore";
     import { srcObject } from "./utils";
+    import { onMount } from "svelte";
 
     export let clickable = false;
 
     export let peer: ScreenSharingLocalMedia;
     let stream = peer.stream;
     export let cssClass: string | undefined;
-    let embedScreen: EmbedScreen;
+    let embedScreen: Streamable;
 
-    if (stream) {
-        embedScreen = {
-            type: "streamable",
-            embed: peer as unknown as Streamable,
-        };
+    onMount(() => {
+        console.log("bonjour je suis mon propre partage d'ecran dans local stream media box");
+    });
+
+    // if (stream) {
+    //     embedScreen = {
+    //         type: "streamable",
+    //         embed: peer as unknown as Streamable,
+    //     };
+    // }
+
+    function highlight() {
+        console.log("JE SUIS DANS LA FONCTION HIGHLIGHT DE SON PROPRE PARTAGE ECRAN");
+        highlightedEmbedScreen.toggleHighlight(peer);
     }
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!--style="height:{$heightCamWrapper}px"-->
 <div
     class="group/screenshare relative video-container rounded-lg {cssClass ? cssClass : ''}"
     class:hide={!stream}
-    style="height:{$heightCamWrapper}px"
+    on:click={highlight}
 >
     {#if stream}
         <video
